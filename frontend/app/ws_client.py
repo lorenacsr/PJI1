@@ -16,7 +16,7 @@ async def run_ws_listener(state: AppState, on_notification=None):
                         raw = await asyncio.wait_for(ws.recv(), timeout=30)
                         data = json.loads(raw)
                         notif_type = data.get("type", "")
-                        if notif_type in ("checklist_submitted", "checklist_reviewed"):
+                        if notif_type in ("checklist_submitted", "checklist_reviewed", "checklist_reminder"):
                             state.unread_count += 1
                         state.dispatch_notification(data)
                         if on_notification:
