@@ -21,10 +21,14 @@ async def get_current_user(
     user_id = payload.get("sub")
     if not user_id:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Token inválido")
+    try:
+        parsed_id = uuid.UUID(user_id)
+    except (ValueError, TypeError, AttributeError):
+        raise HTTPException(status_code=401, detail="Token inválido")
     result = await db.execute(
         select(User)
         .options(selectinload(User.department))
-        .where(User.id == uuid.UUID(user_id))
+        .where(User.id == parsed_id)
     )
     user = result.scalar_one_or_none()
     if not user or not user.is_active:
