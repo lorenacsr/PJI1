@@ -36,7 +36,7 @@ class ChecklistTemplate(Base):
 
     department: Mapped["Department"] = relationship("Department", back_populates="templates")
     items: Mapped[list["ChecklistItemTemplate"]] = relationship(
-        "ChecklistItemTemplate", back_populates="template", order_by="ChecklistItemTemplate.order_index"
+        "ChecklistItemTemplate", back_populates="template", order_by="ChecklistItemTemplate.order_index", cascade="all, delete-orphan"
     )
     daily_checklists: Mapped[list["DailyChecklist"]] = relationship("DailyChecklist", back_populates="template")
 
