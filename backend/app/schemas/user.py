@@ -1,6 +1,6 @@
 import uuid
 from datetime import datetime
-from pydantic import BaseModel, EmailStr, Field
+from pydantic import BaseModel, EmailStr, Field, field_serializer
 from app.models.user import UserRole
 
 
@@ -33,6 +33,11 @@ class UserOut(UserBase):
     department_name: str | None = None
 
     model_config = {"from_attributes": True}
+
+    @field_serializer("avatar_url")
+    def signed_avatar(self, value):
+        from app.core.media import media_link
+        return media_link(value)
 
 
 class UserMe(UserOut):
