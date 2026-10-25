@@ -28,7 +28,7 @@ class ConnectionManager:
     async def send_notification(self, user_id: str, data: dict):
         conns = self._connections.get(user_id, [])
         dead = []
-        for ws in conns:
+        for ws in list(conns):
             try:
                 await ws.send_text(json.dumps(data))
             except Exception:
@@ -70,6 +70,7 @@ async def notifications_ws(
         await websocket.close(code=1008)
         return
 
+    await db.rollback()  # Libera a conexão de leitura durante a sessão WebSocket.
     await manager.connect(user_id, websocket)
     try:
         while True:
@@ -77,4 +78,6 @@ async def notifications_ws(
             if data == "ping":
                 await websocket.send_text("pong")
     except WebSocketDisconnect:
+        pass
+    finally:
         manager.disconnect(user_id, websocket)
