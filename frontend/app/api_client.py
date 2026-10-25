@@ -136,7 +136,8 @@ class APIClient:
 
     async def delete_template(self, template_id: int) -> None:
         async with httpx.AsyncClient(timeout=15) as client:
-            await client.delete(self._url(f"/checklists/templates/{template_id}"), headers=self._headers())
+            r = await client.delete(self._url(f"/checklists/templates/{template_id}"), headers=self._headers())
+            await self._handle(r)
 
     async def add_template_item(self, template_id: int, title: str, requires_photo: bool = False) -> dict:
         async with httpx.AsyncClient(timeout=15) as client:
@@ -347,3 +348,10 @@ class APIClient:
     async def delete_department(self, dept_id: int) -> None:
         async with httpx.AsyncClient(timeout=15) as client:
             await client.delete(self._url(f"/checklists/departments/{dept_id}"), headers=self._headers())
+
+    async def export_checklists(self, params: dict) -> bytes:
+        async with httpx.AsyncClient(timeout=30) as client:
+            response = await client.get(self._url("/checklists/export"), params=params, headers=self._headers())
+            if response.status_code >= 400:
+                await self._handle(response)
+            return response.content
