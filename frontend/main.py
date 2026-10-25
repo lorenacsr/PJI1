@@ -6,7 +6,7 @@ import json as _json
 
 sys.path.insert(0, os.path.dirname(__file__))
 
-from app.state import app_state as state
+from app.state import AppState
 from app.theme import get_theme
 from app.pages.login_page import build_login_view
 from app.pages.employee.home_page import build_employee_view
@@ -58,6 +58,8 @@ def _build_splash_view() -> ft.View:
 
 
 def main(page: ft.Page):
+    # Uma instância por página/sessão; tokens e callbacks não podem ser globais.
+    state = AppState()
     page.title = "Pizzaria Check-In"
     page.theme_mode = ft.ThemeMode.LIGHT
     page.theme = get_theme()
