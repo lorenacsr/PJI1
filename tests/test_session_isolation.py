@@ -21,13 +21,14 @@ class SessionIsolation(unittest.IsolatedAsyncioTestCase):
             exec(compile((ROOT / "frontend/app/state.py").read_text(), "state.py", "exec"), state_ns)
         AppState = state_ns["AppState"]
         parsed = ast.parse((ROOT / "frontend/main.py").read_text())
-        main_node = next(n for n in parsed.body if isinstance(n, ast.FunctionDef) and n.name == "main")
+        main_node = next(n for n in parsed.body if isinstance(n, ast.AsyncFunctionDef) and n.name == "main")
         observed = []
 
         class Page:
             def __init__(self):
                 self.window = types.SimpleNamespace()
                 self.client_storage = types.SimpleNamespace(get=lambda key: None)
+                self.services = []
                 self.views = []
                 self.route = ""
 
@@ -37,7 +38,9 @@ class SessionIsolation(unittest.IsolatedAsyncioTestCase):
             def update(self):
                 pass
 
-        ft = types.SimpleNamespace(Page=Page, ThemeMode=types.SimpleNamespace(LIGHT="light"),
+        class Preferences:
+            async def get(self,key): return None
+        ft = types.SimpleNamespace(SharedPreferences=Preferences, Page=Page, ThemeMode=types.SimpleNamespace(LIGHT="light"),
                                    RouteChangeEvent=object, ViewPopEvent=object)
 
         def login_view(page, state):
@@ -49,8 +52,8 @@ class SessionIsolation(unittest.IsolatedAsyncioTestCase):
         module = ast.Module(body=[main_node], type_ignores=[])
         exec(compile(ast.fix_missing_locations(module), "frontend/main.py", "exec"), namespace)
         first, second = Page(), Page()
-        namespace["main"](first)
-        namespace["main"](second)
+        await namespace["main"](first)
+        await namespace["main"](second)
         await asyncio.sleep(0)
         first.on_route_change(None)
         second.on_route_change(None)
