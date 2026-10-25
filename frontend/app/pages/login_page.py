@@ -8,10 +8,7 @@ from app import theme as th
 def build_login_view(page: ft.Page, state: AppState) -> ft.View:
     api = APIClient(state)
 
-    try:
-        _last_email = page.client_storage.get("last_email") or ""
-    except Exception:
-        _last_email = ""
+    _last_email = ""
 
     email_field = ft.TextField(
         label="E-mail",
@@ -66,9 +63,9 @@ def build_login_view(page: ft.Page, state: AppState) -> ft.View:
 
             try:
                 import json as _j
-                page.client_storage.set("auth_token", state.token)
-                page.client_storage.set("auth_user", _j.dumps(state.user))
-                page.client_storage.set("last_email", email_field.value.strip().lower())
+                await state.storage.set("auth_token", state.token)
+                await state.storage.set("auth_user", _j.dumps(state.user))
+                await state.storage.set("last_email", email_field.value.strip().lower())
             except Exception:
                 pass
 
@@ -93,6 +90,14 @@ def build_login_view(page: ft.Page, state: AppState) -> ft.View:
     login_btn.on_click = do_login
     email_field.on_submit = lambda e: password_field.focus()
     password_field.on_submit = do_login
+
+    async def restore_last_email():
+        if state.storage:
+            value = await state.storage.get("last_email")
+            if value and not email_field.value:
+                email_field.value = value
+                page.update()
+    asyncio.create_task(restore_last_email())
 
     return ft.View(
         route="/login",
