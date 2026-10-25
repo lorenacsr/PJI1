@@ -1,0 +1,43 @@
+PJI1 - Conferência local em 25/10/2026
+Python 3.12; Flet 0.84.0; SQLite descartável no teste HTTP.
+
+API e contratos de proteção
+..........................                                               [100%]
+26 passed, 63 warnings in 14.22s
+
+Sessões independentes
+test_two_pages_have_independent_login_state (test_session_isolation.SessionIsolation.test_two_pages_have_independent_login_state) ... ok
+
+----------------------------------------------------------------------
+Ran 1 test in 0.007s
+
+OK
+
+Controles reais Flet com adaptadores
+OK 360 build_login_view
+OK 360 build_employee_view
+OK 360 build_checklist_view
+OK 360 build_manager_view
+OK 360 build_review_view
+OK 360 build_new_user_view
+OK 360 build_templates_content
+OK 360 build_notifications_view
+OK 360 build_setup_view
+OK 360 terms/profile/password
+OK 1366 build_login_view
+OK 1366 build_employee_view
+OK 1366 build_checklist_view
+OK 1366 build_manager_view
+OK 1366 build_review_view
+OK 1366 build_new_user_view
+OK 1366 build_templates_content
+OK 1366 build_notifications_view
+OK 1366 build_setup_view
+OK 1366 terms/profile/password
+FAILURES []
+ASYNC_ERRORS []
+
+Dependências: pip check sem requisitos quebrados.
+Inicialização web: HTTP 200 e bootstrap Flutter.
+
+Não inclui PostgreSQL real, build Docker, renderização interativa, aparelho real, carga ou homologação.
