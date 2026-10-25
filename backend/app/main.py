@@ -1,5 +1,6 @@
 from contextlib import asynccontextmanager
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
+from fastapi.responses import FileResponse
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from sqlalchemy import text
@@ -43,7 +44,17 @@ app.add_middleware(
     allow_headers=["Authorization", "Content-Type"],
 )
 
-app.mount("/uploads", StaticFiles(directory=str(settings.upload_path)), name="uploads")
+@app.get("/uploads/{filename}")
+async def media_file(filename: str, ticket: str = ""):
+    from app.core.media import valid_media_ticket
+    if not valid_media_ticket(ticket, filename):
+        raise HTTPException(403, "Link de imagem inválido ou expirado; atualize a tela")
+    if "/" in filename or "\\" in filename or filename in (".", ".."):
+        raise HTTPException(404, "Imagem não encontrada")
+    path = settings.upload_path / filename
+    if not path.is_file():
+        raise HTTPException(404, "Imagem não encontrada")
+    return FileResponse(path, headers={"Cache-Control": "private, no-store", "X-Content-Type-Options": "nosniff"})
 
 app.include_router(auth.router, prefix="/api/v1")
 app.include_router(users.router, prefix="/api/v1")
