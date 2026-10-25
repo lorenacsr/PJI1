@@ -7,7 +7,7 @@ services:
     restart: unless-stopped
     environment:
       POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: ${DB_PASSWORD:-postgres}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?Configure DB_PASSWORD no .env}
       POSTGRES_DB: pizzaria_checklist
     volumes:
       - postgres_data:/var/lib/postgresql/data
@@ -25,8 +25,13 @@ services:
       db:
         condition: service_healthy
     environment:
-      DATABASE_URL: postgresql+psycopg://postgres:${DB_PASSWORD:-postgres}@db:5432/pizzaria_checklist
-      SECRET_KEY: ${SECRET_KEY:-pizzaria-secret-key-change-in-production}
+      DATABASE_URL: postgresql+psycopg://postgres:${DB_PASSWORD:?Configure DB_PASSWORD no .env}@db:5432/pizzaria_checklist
+      ENV: ${ENV:-production}
+      SECRET_KEY: ${SECRET_KEY:?Configure SECRET_KEY no .env}
+      SEED_ADMIN_EMAIL: ${SEED_ADMIN_EMAIL:-admin@pizzaria.com}
+      SEED_ADMIN_PASSWORD: ${SEED_ADMIN_PASSWORD:?Configure SEED_ADMIN_PASSWORD no .env}
+      SEED_MANAGER_EMAIL: ${SEED_MANAGER_EMAIL:-gerente@pizzaria.com}
+      SEED_MANAGER_PASSWORD: ${SEED_MANAGER_PASSWORD:?Configure SEED_MANAGER_PASSWORD no .env}
       UPLOAD_DIR: /app/uploads
     ports:
       - "${BACKEND_PORT:-8001}:8001"
