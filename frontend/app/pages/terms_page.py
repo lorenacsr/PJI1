@@ -108,14 +108,6 @@ Em caso de dúvidas sobre o tratamento de seus dados pessoais, contate o adminis
 def build_terms_view(page: ft.Page, back_route: str = "/login", show_tab: str = "terms") -> ft.View:
     tab_idx = [0 if show_tab == "terms" else 1]
 
-    tabs = ft.Tabs(
-        selected_index=tab_idx[0],
-        animation_duration=150,
-        tabs=[
-            ft.Tab(text="Termos de Uso"),
-            ft.Tab(text="Privacidade"),
-        ],
-    )
 
     terms_body = ft.Container(
         padding=ft.Padding.symmetric(horizontal=16, vertical=12),
@@ -134,19 +126,21 @@ def build_terms_view(page: ft.Page, back_route: str = "/login", show_tab: str = 
         controls=[terms_body],
     )
 
-    def on_tab_change(e):
-        scroll.controls = [terms_body if tabs.selected_index == 0 else privacy_body]
-        page.update()
-
-    tabs.on_change = on_tab_change
-    scroll.controls = [terms_body if tab_idx[0] == 0 else privacy_body]
+    tabs = ft.Tabs(
+        length=2, selected_index=tab_idx[0], expand=True,
+        content=ft.Column([
+            ft.TabBar(tabs=[ft.Tab(label="Termos de Uso"), ft.Tab(label="Privacidade")]),
+            ft.TabBarView(controls=[ft.Column([terms_body],scroll=ft.ScrollMode.AUTO),
+                                    ft.Column([privacy_body],scroll=ft.ScrollMode.AUTO)],expand=True),
+        ], expand=True),
+    )
 
     def on_back(_):
         asyncio.create_task(page.push_route(back_route))
 
     return ft.View(
         route="/terms",
-        bgcolor=th.BACKGROUND,
+        bgcolor=th.BG,
         padding=0,
         appbar=ft.AppBar(
             leading=ft.IconButton(ft.Icons.ARROW_BACK, on_click=on_back),
@@ -156,7 +150,7 @@ def build_terms_view(page: ft.Page, back_route: str = "/login", show_tab: str = 
         ),
         controls=[
             ft.Column(
-                [tabs, scroll],
+                [tabs],
                 expand=True, spacing=0,
             )
         ],
