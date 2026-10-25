@@ -52,7 +52,7 @@ def build_checklist_view(page: ft.Page, state: AppState, checklist_id: str) -> f
     _auto_prompted = [False]
     current_pick_id: list = [None]
 
-    async def _handle_pick_result(e: ft.FilePickerResultEvent):
+    async def _handle_pick_result(e):
         import os, tempfile
         _ALLOWED_EXTS = {".jpg", ".jpeg", ".png", ".webp"}
         _MAX_BYTES = 5 * 1024 * 1024
@@ -99,8 +99,8 @@ def build_checklist_view(page: ft.Page, state: AppState, checklist_id: str) -> f
                     pass
             page.update()
 
-    file_picker = ft.FilePicker(on_result=lambda e: asyncio.create_task(_handle_pick_result(e)))
-    page.overlay.append(file_picker)
+    file_picker = ft.FilePicker()
+    page.services.append(file_picker)
 
     def _fmt_dt(dt_str: str) -> str:
         if not dt_str:
@@ -415,12 +415,15 @@ def build_checklist_view(page: ft.Page, state: AppState, checklist_id: str) -> f
             except APIError as ex:
                 th.show_snack(page, ex.detail, th.ERROR)
 
-        def pick_photo(e, iid=item_id):
+        async def pick_photo(e, iid=item_id):
             current_pick_id[0] = iid
-            file_picker.pick_files(
+            files = await file_picker.pick_files(
+                with_data=True,
                 file_type=ft.FilePickerFileType.IMAGE,
                 allow_multiple=False,
             )
+            from types import SimpleNamespace
+            await _handle_pick_result(SimpleNamespace(files=files))
 
         def open_note_dialog(e, iid=item_id, cur_status=status, cur_notes=existing_notes):
             note_field = ft.TextField(
@@ -524,7 +527,7 @@ def build_checklist_view(page: ft.Page, state: AppState, checklist_id: str) -> f
             full_url = f"{state.media_base}{photo_url}"
             controls.append(
                 ft.Container(
-                    content=ft.Image(src=full_url, width=120, height=90, fit=ft.ImageFit.COVER, border_radius=8),
+                    content=ft.Image(src=full_url, width=120, height=90, fit=ft.BoxFit.COVER, border_radius=8),
                     margin=ft.Margin.only(left=56, bottom=8),
                     border=ft.border.only(bottom=ft.BorderSide(color=th.SURFACE_VARIANT, width=1)),
                     on_click=lambda e, u=full_url: th.show_photo_dialog(page, u),
@@ -555,25 +558,12 @@ def build_checklist_view(page: ft.Page, state: AppState, checklist_id: str) -> f
             if (i.get("item_template") or {}).get("requires_photo", False) and not i.get("photo_url")
         )
         if missing > 0:
-            dlg = ft.AlertDialog(
-                title=ft.Row([ft.Icon(ft.Icons.CAMERA_ALT_OUTLINED, color=ft.Colors.ORANGE_700), ft.Text("Fotos pendentes", size=15)], spacing=8),
-                content=ft.Text(
-                    f"{missing} {'item requer' if missing == 1 else 'itens requerem'} foto obrigatória ainda não enviada.\n\nDeseja enviar mesmo assim?",
-                    size=13,
-                ),
-                actions=[
-                    ft.TextButton("Cancelar", on_click=lambda ev: (setattr(dlg, "open", False), page.update())),
-                    ft.FilledButton(
-                        "Enviar assim mesmo",
-                        on_click=lambda ev: (setattr(dlg, "open", False), page.update(), asyncio.create_task(_confirm_and_submit())),
-                        style=ft.ButtonStyle(bgcolor=ft.Colors.ORANGE_700, color=ft.Colors.WHITE),
-                    ),
-                ],
-                actions_alignment=ft.MainAxisAlignment.END,
-            )
-            page.show_dialog(dlg)
-        else:
-            asyncio.create_task(_confirm_and_submit())
+            th.show_snack(page, f"Envie as {missing} fotos obrigatórias antes de enviar.", th.ERROR)
+            return
+        if not data.get("items") or any(i.get("status") != "DONE" for i in data["items"]):
+            th.show_snack(page, "Conclua todos os itens antes de enviar.", th.ERROR)
+            return
+        asyncio.create_task(_confirm_and_submit())
 
     submit_btn.on_click = do_submit
     asyncio.create_task(reload())
