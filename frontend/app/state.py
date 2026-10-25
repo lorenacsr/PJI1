@@ -6,6 +6,7 @@ load_dotenv()
 
 class AppState:
     def __init__(self):
+        self.storage = None
         self.token: str | None = None
         self.user: dict | None = None
         self.api_base: str = os.getenv("API_BASE_URL", "http://localhost:8001/api/v1")
