@@ -12,12 +12,12 @@ ON_SURFACE_VARIANT = "#616161"
 ERROR = "#B00020"
 
 STATUS_COLORS = {
-    "IN_PROGRESS": "#2196F3",
-    "SUBMITTED": "#FF9800",
-    "APPROVED": "#4CAF50",
-    "REJECTED": "#F44336",
-    "PENDING": "#9E9E9E",
-    "DONE": "#4CAF50",
+    "IN_PROGRESS": "#1565C0",
+    "SUBMITTED": "#9C4A00",
+    "APPROVED": "#256D2B",
+    "REJECTED": "#B71C1C",
+    "PENDING": "#616161",
+    "DONE": "#256D2B",
 }
 
 STATUS_LABELS = {
@@ -52,6 +52,10 @@ def get_theme() -> ft.Theme:
     return ft.Theme(
         color_scheme_seed=PRIMARY,
         color_scheme=ft.ColorScheme(
+            surface=SURFACE,
+            on_surface=ON_SURFACE,
+            on_surface_variant=ON_SURFACE_VARIANT,
+            outline="#707070",
             primary=PRIMARY,
             on_primary=ft.Colors.WHITE,
             secondary=SECONDARY,
@@ -62,10 +66,10 @@ def get_theme() -> ft.Theme:
 
 
 def status_chip(status: str) -> ft.Container:
-    color = STATUS_COLORS.get(status, "#9E9E9E")
+    color = STATUS_COLORS.get(status, "#616161")
     label = STATUS_LABELS.get(status, status)
     return ft.Container(
-        content=ft.Text(label, size=11, weight=ft.FontWeight.W_600, color=ft.Colors.WHITE),
+        content=ft.Text(label, size=13, weight=ft.FontWeight.W_600, color=ft.Colors.WHITE),
         bgcolor=color,
         border_radius=12,
         padding=ft.Padding.symmetric(horizontal=10, vertical=4),
@@ -122,7 +126,7 @@ def show_edit_profile_dialog(page, api, state, on_success=None):
     def _avatar_content():
         src = _avatar_src()
         if src:
-            return ft.Image(src=src, width=72, height=72, fit=ft.ImageFit.COVER, border_radius=36)
+            return ft.Image(src=src, width=72, height=72, fit=ft.BoxFit.COVER, border_radius=36)
         return ft.Text(
             state.display_name[:1].upper(), size=26,
             weight=ft.FontWeight.BOLD, color=ft.Colors.WHITE,
@@ -172,10 +176,14 @@ def show_edit_profile_dialog(page, api, state, on_success=None):
                 except Exception:
                     pass
 
-    avatar_picker = ft.FilePicker(
-        on_result=lambda e: asyncio.create_task(_handle_avatar_pick(e))
-    )
-    page.overlay.append(avatar_picker)
+    avatar_picker = ft.FilePicker()
+    page.services.append(avatar_picker)
+
+    async def pick_avatar(e):
+        from types import SimpleNamespace
+        files = await avatar_picker.pick_files(file_type=ft.FilePickerFileType.IMAGE,
+                                               allow_multiple=False, with_data=True)
+        await _handle_avatar_pick(SimpleNamespace(files=files))
 
     name_field = ft.TextField(label="Nome", value=state.display_name, expand=True)
     email_field = ft.TextField(
@@ -236,10 +244,7 @@ def show_edit_profile_dialog(page, api, state, on_success=None):
                                 ft.TextButton(
                                     "Trocar foto",
                                     icon=ft.Icons.PHOTO_CAMERA_OUTLINED,
-                                    on_click=lambda e: avatar_picker.pick_files(
-                                        file_type=ft.FilePickerFileType.IMAGE,
-                                        allow_multiple=False,
-                                    ),
+                                    on_click=pick_avatar,
                                 ),
                                 photo_status,
                             ],
@@ -282,8 +287,8 @@ def show_password_change_dialog(page, api):
             err.visible = True
             page.update()
             return
-        if not new_pw.value or len(new_pw.value) < 6:
-            err.value = "Nova senha deve ter ao menos 6 caracteres"
+        if not new_pw.value or len(new_pw.value) < 8:
+            err.value = "Nova senha deve ter ao menos 8 caracteres"
             err.visible = True
             page.update()
             return
@@ -326,7 +331,7 @@ def show_photo_dialog(page: ft.Page, url: str):
     dlg = ft.AlertDialog(
         modal=True,
         content=ft.Container(
-            content=ft.Image(src=url, fit=ft.ImageFit.CONTAIN, expand=True),
+            content=ft.Image(src=url, fit=ft.BoxFit.CONTAIN, expand=True),
             bgcolor=ft.Colors.BLACK,
             width=380,
             height=480,
@@ -353,6 +358,8 @@ def fmt_relative_time(dt_str: str) -> str:
     try:
         from datetime import datetime, timezone, timedelta as _td
         dt = datetime.fromisoformat(dt_str.replace("Z", "+00:00"))
+        if dt.tzinfo is None:
+            dt = dt.replace(tzinfo=timezone.utc)
         now = datetime.now(timezone.utc)
         secs = int((now - dt).total_seconds())
         if secs < 60:
