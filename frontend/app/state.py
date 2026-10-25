@@ -84,6 +84,3 @@ class AppState:
         if self._media_base_url:
             return self._media_base_url
         return self.api_base.removesuffix("/api/v1")
-
-
-app_state = AppState()
