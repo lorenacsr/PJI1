@@ -1,6 +1,7 @@
 import uuid
 from datetime import datetime, date
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_validator
+from typing import Literal
 from app.models.checklist import ChecklistStatus, ItemStatus, ChecklistPhase
 
 
@@ -50,7 +51,7 @@ class ChecklistItemOut(BaseModel):
 
 
 class ChecklistItemUpdate(BaseModel):
-    status: ItemStatus
+    status: Literal[ItemStatus.PENDING, ItemStatus.DONE]
     notes: str | None = Field(None, max_length=1000)
 
 
@@ -105,8 +106,14 @@ class ChecklistNotesUpdate(BaseModel):
 
 
 class ReviewRequest(BaseModel):
-    status: ChecklistStatus
+    status: Literal[ChecklistStatus.APPROVED, ChecklistStatus.REJECTED]
     notes: str | None = Field(None, max_length=1000)
+
+    @model_validator(mode="after")
+    def rejection_requires_reason(self):
+        if self.status == ChecklistStatus.REJECTED and not (self.notes or "").strip():
+            raise ValueError("Informe o motivo da reprovação")
+        return self
 
 
 class NotificationOut(BaseModel):
