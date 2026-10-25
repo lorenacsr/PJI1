@@ -560,7 +560,7 @@ def build_employee_view(page: ft.Page, state: AppState) -> ft.View:
         if url:
             return ft.Container(
                 width=32, height=32, border_radius=16,
-                content=ft.Image(src=f"{state.media_base}{url}", fit=ft.ImageFit.COVER),
+                content=ft.Image(src=f"{state.media_base}{url}", fit=ft.BoxFit.COVER),
                 clip_behavior=ft.ClipBehavior.ANTI_ALIAS,
             )
         initial = state.display_name[:1].upper() if state.display_name else "?"
@@ -615,7 +615,7 @@ def build_employee_view(page: ft.Page, state: AppState) -> ft.View:
                         ft.PopupMenuItem(),
                         ft.PopupMenuItem("Editar perfil", icon=ft.Icons.EDIT_OUTLINED, on_click=lambda e: th.show_edit_profile_dialog(page, api, state, on_success=on_profile_success)),
                         ft.PopupMenuItem("Alterar senha", icon=ft.Icons.LOCK_RESET, on_click=lambda e: th.show_password_change_dialog(page, api)),
-                        ft.PopupMenuItem("Sair", icon=ft.Icons.LOGOUT, on_click=lambda e: _logout(page, state)),
+                        ft.PopupMenuItem("Sair", icon=ft.Icons.LOGOUT, on_click=lambda e: asyncio.create_task(_logout(page, state))),
                     ],
                 ),
             ],
@@ -846,10 +846,10 @@ def _build_history_card(page, c: dict) -> ft.Container:
     return th.card(ft.Column(card_controls, spacing=8, tight=True))
 
 
-def _logout(page: ft.Page, state: AppState):
+async def _logout(page: ft.Page, state: AppState):
     try:
-        page.client_storage.remove("auth_token")
-        page.client_storage.remove("auth_user")
+        await state.storage.remove("auth_token")
+        await state.storage.remove("auth_user")
     except Exception:
         pass
     state.logout()
