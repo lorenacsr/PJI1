@@ -1,11 +1,13 @@
 import sys
 from pydantic_settings import BaseSettings
+from pydantic import model_validator
 from pathlib import Path
 
 _WEAK_KEY = "pizzaria-secret-key-change-in-production-2024"
 
 
 class Settings(BaseSettings):
+    ENV: str = "development"
     DATABASE_URL: str = "postgresql+psycopg://postgres:postgres@127.0.0.1:5433/pizzaria_checklist"
     SECRET_KEY: str = _WEAK_KEY
     ALGORITHM: str = "HS256"
@@ -33,17 +35,15 @@ class Settings(BaseSettings):
         p.mkdir(parents=True, exist_ok=True)
         return p
 
-    def __init__(self, **data):
-        super().__init__(**data)
-        if self.SECRET_KEY == _WEAK_KEY:
-            import os
-            if os.getenv("ENV", "development") == "production":
-                print(
-                    "[SEGURANÇA] SECRET_KEY padrão detectada em produção! "
-                    "Defina SECRET_KEY no .env antes de iniciar.",
-                    file=sys.stderr,
-                )
-                sys.exit(1)
+    @model_validator(mode="after")
+    def production_secrets(self):
+        if self.ENV == "production":
+            if len(self.SECRET_KEY) < 32 or self.SECRET_KEY.startswith("pizzaria-secret-key"):
+                raise ValueError("Defina uma SECRET_KEY aleatória de pelo menos 32 caracteres")
+            for password in (self.SEED_ADMIN_PASSWORD, self.SEED_MANAGER_PASSWORD):
+                if len(password) < 12 or password in ("admin123", "gerente123"):
+                    raise ValueError("Configure senhas iniciais privadas de pelo menos 12 caracteres")
+        return self
 
 
 settings = Settings()
