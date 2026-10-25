@@ -20,11 +20,18 @@ AsyncSessionLocal = async_sessionmaker(
 )
 
 
+def queue_notification(session, user_id, data):
+    session.info.setdefault("notifications_after_commit", []).append((user_id, data))
+
+
 async def get_db() -> AsyncSession:
     async with AsyncSessionLocal() as session:
         try:
             yield session
             await session.commit()
+            from app.routers.ws import manager
+            for user_id, data in session.info.pop("notifications_after_commit", []):
+                await manager.send_notification(user_id, data)
         except Exception:
             await session.rollback()
             raise
