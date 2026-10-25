@@ -94,8 +94,8 @@ def build_new_user_view(page: ft.Page, state: AppState) -> ft.View:
             page.update()
             return
 
-        if not password_field.value or len(password_field.value) < 6:
-            error_text.value = "Senha deve ter ao menos 6 caracteres"
+        if not password_field.value or len(password_field.value) < 8:
+            error_text.value = "Senha deve ter ao menos 8 caracteres"
             error_text.visible = True
             page.update()
             return
