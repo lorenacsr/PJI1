@@ -3,6 +3,8 @@ from datetime import datetime, date, timedelta
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
+from app.core.images import read_image
+from app.core.media import media_link
 from sqlalchemy.orm import selectinload
 from app.db.session import get_db
 from app.models.user import User, UserRole
@@ -19,10 +21,16 @@ from app.schemas.checklist import (
 )
 from app.core.deps import get_current_user, get_current_manager
 from app.core.config import settings
-from app.routers.ws import manager as ws_manager
+from app.db.session import queue_notification
 import aiofiles
 
 router = APIRouter(prefix="/checklists", tags=["checklists"])
+
+
+def _csv_cell(value):
+    if isinstance(value, str) and value.lstrip().startswith(("=", "+", "-", "@", "\t", "\r")):
+        return "'" + value
+    return value
 
 
 def _progress(checklist: DailyChecklist) -> int:
@@ -43,6 +51,9 @@ def _to_out(checklist: DailyChecklist) -> DailyChecklistOut:
     if checklist.reviewer:
         out.reviewer_name = checklist.reviewer.name
     out.items.sort(key=lambda i: i.item_template.order_index if i.item_template else 0)
+    out.employee_avatar_url = media_link(out.employee_avatar_url)
+    for item in out.items:
+        item.photo_url = media_link(item.photo_url)
     return out
 
 
@@ -56,6 +67,9 @@ async def list_departments(db: AsyncSession = Depends(get_db), _: User = Depends
 async def create_department(data: DepartmentCreate, db: AsyncSession = Depends(get_db), _: User = Depends(get_current_manager)):
     import re
     slug = re.sub(r"[^a-z0-9]+", "_", data.display_name.lower().strip()).strip("_")
+    duplicate = await db.execute(select(Department.id).where(Department.name == slug))
+    if not slug or duplicate.scalar_one_or_none():
+        raise HTTPException(409, "Departamento já existe ou possui nome inválido")
     dept = Department(name=slug, display_name=data.display_name.strip(), icon=data.icon, color=data.color)
     db.add(dept)
     await db.commit()
@@ -86,6 +100,10 @@ async def delete_department(dept_id: int, db: AsyncSession = Depends(get_db), _:
     dept = result.scalar_one_or_none()
     if not dept:
         raise HTTPException(status_code=404, detail="Departamento não encontrado")
+    template = await db.execute(select(ChecklistTemplate.id).where(ChecklistTemplate.department_id == dept_id).limit(1))
+    member = await db.execute(select(User.id).where(User.department_id == dept_id).limit(1))
+    if template.scalar_one_or_none() or member.scalar_one_or_none():
+        raise HTTPException(409, "Departamento possui modelos ou usuários vinculados")
     await db.delete(dept)
     await db.commit()
 
@@ -98,19 +116,30 @@ async def list_templates(
 ):
     q = select(ChecklistTemplate).options(selectinload(ChecklistTemplate.items))
     is_manager = current_user.role in (UserRole.manager, UserRole.admin)
-    if department_id:
-        q = q.where(ChecklistTemplate.department_id == department_id)
-    elif current_user.department_id and not is_manager:
+    if not is_manager:
+        if not current_user.department_id:
+            return []
+        if department_id and department_id != current_user.department_id:
+            raise HTTPException(status_code=403, detail="Departamento não autorizado")
         q = q.where(ChecklistTemplate.department_id == current_user.department_id)
+    elif department_id:
+        q = q.where(ChecklistTemplate.department_id == department_id)
     q = q.order_by(ChecklistTemplate.department_id, ChecklistTemplate.phase)
     result = await db.execute(q)
     return result.scalars().all()
+
+
+async def _ensure_template_unused(db: AsyncSession, template_id: int):
+    used = await db.execute(select(DailyChecklist.id).where(DailyChecklist.template_id == template_id).limit(1))
+    if used.scalar_one_or_none():
+        raise HTTPException(status_code=409, detail="Modelo possui histórico. Crie um novo modelo para preservar os registros.")
 
 
 def _tmpl_with_items(template_id: int):
     return (
         select(ChecklistTemplate)
         .options(selectinload(ChecklistTemplate.items))
+        .execution_options(populate_existing=True)
         .where(ChecklistTemplate.id == template_id)
     )
 
@@ -121,6 +150,9 @@ async def create_template(
     db: AsyncSession = Depends(get_db),
     _: User = Depends(get_current_manager),
 ):
+    department = await db.get(Department, body.department_id)
+    if not department:
+        raise HTTPException(422, "Departamento inválido")
     tmpl = ChecklistTemplate(name=body.name, department_id=body.department_id, phase=body.phase)
     db.add(tmpl)
     await db.flush()
@@ -139,6 +171,7 @@ async def update_template(
     tmpl = result.scalar_one_or_none()
     if not tmpl:
         raise HTTPException(status_code=404, detail="Modelo não encontrado")
+    await _ensure_template_unused(db, template_id)
     if body.name is not None:
         tmpl.name = body.name
     await db.flush()
@@ -174,6 +207,7 @@ async def add_template_item(
     tmpl = result.scalar_one_or_none()
     if not tmpl:
         raise HTTPException(status_code=404, detail="Modelo não encontrado")
+    await _ensure_template_unused(db, template_id)
     next_order = (max((i.order_index for i in tmpl.items), default=-1) + 1) if body.order_index is None else body.order_index
     item = ChecklistItemTemplate(
         template_id=template_id,
@@ -199,6 +233,7 @@ async def update_template_item(
     tmpl = result.scalar_one_or_none()
     if not tmpl:
         raise HTTPException(status_code=404, detail="Modelo não encontrado")
+    await _ensure_template_unused(db, template_id)
     item = next((i for i in tmpl.items if i.id == item_id), None)
     if not item:
         raise HTTPException(status_code=404, detail="Item não encontrado")
@@ -223,6 +258,7 @@ async def delete_template_item(
     tmpl = result.scalar_one_or_none()
     if not tmpl:
         raise HTTPException(status_code=404, detail="Modelo não encontrado")
+    await _ensure_template_unused(db, template_id)
     item = next((i for i in tmpl.items if i.id == item_id), None)
     if not item:
         raise HTTPException(status_code=404, detail="Item não encontrado")
@@ -259,11 +295,12 @@ async def start_checklist(
 
     if (
         current_user.role == UserRole.employee
-        and current_user.department_id
         and tmpl.department_id != current_user.department_id
     ):
         raise HTTPException(status_code=403, detail="Template pertence a outro departamento")
 
+    if not tmpl.items:
+        raise HTTPException(status_code=400, detail="Modelo sem itens não pode iniciar um turno")
     checklist = DailyChecklist(
         template_id=body.template_id,
         employee_id=current_user.id,
@@ -375,7 +412,7 @@ async def all_checklists(
         try:
             q = q.where(DailyChecklist.employee_id == uuid.UUID(employee_id))
         except ValueError:
-            pass
+            raise HTTPException(status_code=422, detail="Colaborador inválido")
     q = q.limit(limit).offset(offset)
     result = await db.execute(q)
     return [_to_out(c) for c in result.scalars().all()]
@@ -383,26 +420,16 @@ async def all_checklists(
 
 @router.get("/export")
 async def export_checklists(
-    token: str = Query(...),
     from_date: date | None = Query(None),
     to_date: date | None = Query(None),
     department_id: int | None = Query(None),
     status: ChecklistStatus | None = Query(None),
     db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_manager),
 ):
     from app.core.security import decode_token
     from fastapi.responses import StreamingResponse
     import csv, io
-
-    payload = decode_token(token)
-    if not payload or not payload.get("sub"):
-        raise HTTPException(status_code=401, detail="Token inválido")
-    user_result = await db.execute(select(User).where(User.id == uuid.UUID(payload["sub"])))
-    current_user = user_result.scalar_one_or_none()
-    if not current_user or not current_user.is_active:
-        raise HTTPException(status_code=401, detail="Usuário não encontrado")
-    if current_user.role not in (UserRole.manager, UserRole.admin):
-        raise HTTPException(status_code=403, detail="Acesso negado")
 
     q = (
         select(DailyChecklist)
@@ -438,7 +465,7 @@ async def export_checklists(
         sv = c.status.value if hasattr(c.status, "value") else str(c.status)
         dept = c.template.department.display_name if c.template and c.template.department else ""
         phase = c.template.phase.value if c.template and c.template.phase else ""
-        writer.writerow([
+        writer.writerow([_csv_cell(v) for v in [
             c.date.strftime("%d/%m/%Y"),
             c.employee.name if c.employee else "",
             dept,
@@ -451,7 +478,7 @@ async def export_checklists(
             c.reviewed_at.strftime("%d/%m/%Y %H:%M") if c.reviewed_at else "",
             c.reviewer.name if c.reviewer else "",
             c.review_notes or "",
-        ])
+        ]])
 
     filename = f"checklists_{date.today().strftime('%Y%m%d')}.csv"
     # utf-8-sig adds BOM so Excel opens accents correctly
@@ -535,7 +562,7 @@ async def missing_employees_today(
             "id": str(u.id),
             "name": u.name,
             "department_name": u.department.display_name if u.department else "—",
-            "avatar_url": u.avatar_url,
+            "avatar_url": media_link(u.avatar_url),
         }
         for u in employees
         if u.id not in started_ids
@@ -571,7 +598,7 @@ async def stats_team(
             per_emp[eid]["approved"] += cnt
         elif sv == "REJECTED":
             per_emp[eid]["rejected"] += cnt
-        if last_date and (per_emp[eid]["last_active"] is None or last_date > per_emp[eid]["last_active"]):
+        if last_date and (per_emp[eid]["last_active"] is None or last_date.isoformat() > per_emp[eid]["last_active"]):
             per_emp[eid]["last_active"] = last_date.isoformat()
     return list(per_emp.values())
 
@@ -634,7 +661,7 @@ async def remind_missing_today(
             body="Você ainda não iniciou seu checklist de hoje. Complete-o antes do final do turno.",
         )
         db.add(notif)
-        await ws_manager.send_notification(str(emp.id), {
+        queue_notification(db, str(emp.id), {
             "type": "checklist_reminder",
             "message": "Lembrete do gestor: você ainda não iniciou seu checklist de hoje.",
         })
@@ -859,7 +886,7 @@ async def update_item(
             selectinload(DailyChecklist.employee),
             selectinload(DailyChecklist.reviewer),
         )
-        .where(DailyChecklist.id == checklist_id)
+        .where(DailyChecklist.id == checklist_id).with_for_update()
     )
     checklist = result.scalar_one_or_none()
     if not checklist:
@@ -900,7 +927,7 @@ async def upload_item_photo(
             selectinload(DailyChecklist.employee),
             selectinload(DailyChecklist.reviewer),
         )
-        .where(DailyChecklist.id == checklist_id)
+        .where(DailyChecklist.id == checklist_id).with_for_update()
     )
     checklist = result.scalar_one_or_none()
     if not checklist or checklist.employee_id != current_user.id:
@@ -912,18 +939,8 @@ async def upload_item_photo(
     if not item:
         raise HTTPException(status_code=404, detail="Item não encontrado")
 
-    _ALLOWED_EXTS = {"jpg", "jpeg", "png", "webp"}
-    _MAX_SIZE = 5 * 1024 * 1024  # 5 MB
-
-    ext = file.filename.rsplit(".", 1)[-1].lower() if file.filename and "." in file.filename else "jpg"
-    if ext not in _ALLOWED_EXTS:
-        raise HTTPException(status_code=400, detail="Formato inválido. Use JPG, PNG ou WEBP.")
-
-    content = await file.read()
-    if len(content) > _MAX_SIZE:
-        raise HTTPException(status_code=400, detail="Arquivo muito grande. Máximo 5 MB.")
-
-    filename = f"check_{item_id}.{ext}"
+    content, ext = await read_image(file, 5 * 1024 * 1024)
+    filename = f"check_{item_id}_{uuid.uuid4().hex}.{ext}"
     filepath = settings.upload_path / filename
     async with aiofiles.open(filepath, "wb") as f:
         await f.write(content)
@@ -949,7 +966,7 @@ async def submit_checklist(
             selectinload(DailyChecklist.employee),
             selectinload(DailyChecklist.reviewer),
         )
-        .where(DailyChecklist.id == checklist_id)
+        .where(DailyChecklist.id == checklist_id).with_for_update()
     )
     checklist = result.scalar_one_or_none()
     if not checklist or checklist.employee_id != current_user.id:
@@ -957,9 +974,10 @@ async def submit_checklist(
     if checklist.status != ChecklistStatus.IN_PROGRESS:
         raise HTTPException(status_code=400, detail="Checklist já submetido")
 
-    pending = [i for i in checklist.items if i.status == ItemStatus.PENDING]
-    if len(pending) > len(checklist.items) * 0.5:
-        raise HTTPException(status_code=400, detail="Complete ao menos 50% dos itens antes de submeter")
+    if not checklist.items or any(i.status != ItemStatus.DONE for i in checklist.items):
+        raise HTTPException(status_code=400, detail="Conclua todos os itens antes de enviar para revisão")
+    if any(i.item_template.requires_photo and not i.photo_url for i in checklist.items):
+        raise HTTPException(status_code=400, detail="Envie as fotos obrigatórias antes de submeter")
 
     checklist.status = ChecklistStatus.SUBMITTED
     checklist.submitted_at = datetime.utcnow()
@@ -978,7 +996,7 @@ async def submit_checklist(
             reference_id=checklist.id,
         )
         db.add(notif)
-        await ws_manager.send_notification(str(mgr.id), {
+        queue_notification(db, str(mgr.id), {
             "type": "checklist_submitted",
             "checklist_id": str(checklist.id),
             "message": f"{current_user.name} submeteu o checklist de {dept_name}",
@@ -1003,7 +1021,7 @@ async def review_checklist(
             selectinload(DailyChecklist.employee),
             selectinload(DailyChecklist.reviewer),
         )
-        .where(DailyChecklist.id == checklist_id)
+        .where(DailyChecklist.id == checklist_id).with_for_update()
     )
     checklist = result.scalar_one_or_none()
     if not checklist:
@@ -1026,7 +1044,7 @@ async def review_checklist(
         reference_id=checklist.id,
     )
     db.add(notif)
-    await ws_manager.send_notification(str(checklist.employee_id), {
+    queue_notification(db, str(checklist.employee_id), {
         "type": "checklist_reviewed",
         "status": body.status.value,
         "message": f"Seu checklist foi {action}!",
@@ -1050,7 +1068,7 @@ async def reopen_checklist(
             selectinload(DailyChecklist.employee),
             selectinload(DailyChecklist.reviewer),
         )
-        .where(DailyChecklist.id == checklist_id)
+        .where(DailyChecklist.id == checklist_id).with_for_update()
     )
     checklist = result.scalar_one_or_none()
     if not checklist:
@@ -1063,6 +1081,9 @@ async def reopen_checklist(
         raise HTTPException(status_code=400, detail="Apenas checklists reprovados podem ser reabertos")
     checklist.status = ChecklistStatus.IN_PROGRESS
     checklist.submitted_at = None
+    checklist.reviewed_at = None
+    checklist.reviewer_id = None
+    checklist.review_notes = None
 
     if is_manager and not is_owner:
         dept_name = (
@@ -1079,7 +1100,7 @@ async def reopen_checklist(
         )
         db.add(notif)
         await db.flush()
-        await ws_manager.send_notification(str(checklist.employee_id), {
+        queue_notification(db, str(checklist.employee_id), {
             "type": "checklist_reviewed",
             "status": "REOPENED",
             "message": f"Seu checklist de {dept_name} foi reaberto para correção",
