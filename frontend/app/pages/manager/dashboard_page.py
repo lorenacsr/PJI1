@@ -280,7 +280,7 @@ def build_manager_view(page: ft.Page, state: AppState) -> ft.View:
                                 if av_url and state.media_base:
                                     leading = ft.Container(
                                         width=36, height=36, border_radius=18,
-                                        content=ft.Image(src=f"{state.media_base}{av_url}", fit=ft.ImageFit.COVER),
+                                        content=ft.Image(src=f"{state.media_base}{av_url}", fit=ft.BoxFit.COVER),
                                         clip_behavior=ft.ClipBehavior.ANTI_ALIAS,
                                     )
                                 else:
@@ -451,25 +451,29 @@ def build_manager_view(page: ft.Page, state: AppState) -> ft.View:
         border_radius=12, filled=True,
         content_padding=ft.Padding.symmetric(horizontal=12, vertical=8),
     )
-    def _export_csv(e):
+    async def _export_csv(e):
         from datetime import date as _date, timedelta as _td
-        params = [f"token={state.token}"]
+        params = {}
         if all_days_back[0] == -1:
             from_date = all_custom_from[0].isoformat() if all_custom_from[0] else _date.today().isoformat()
             if all_custom_to[0]:
-                params.append(f"to_date={all_custom_to[0].isoformat()}")
+                params["to_date"] = all_custom_to[0].isoformat()
         else:
-            from_date = (
-                _date.today().isoformat() if all_days_back[0] == 0
-                else (_date.today() - _td(days=all_days_back[0])).isoformat()
-            )
-        params.append(f"from_date={from_date}")
+            from_date = (_date.today() - _td(days=max(0, all_days_back[0]))).isoformat()
+        params["from_date"] = from_date
         if all_dept_id[0]:
-            params.append(f"department_id={all_dept_id[0]}")
+            params["department_id"] = all_dept_id[0]
         if all_status_val[0]:
-            params.append(f"status={all_status_val[0]}")
-        url = f"{state.api_base}/checklists/export?{'&'.join(params)}"
-        page.launch_url(url)
+            params["status"] = all_status_val[0]
+        picker = ft.FilePicker()
+        page.services.append(picker)
+        try:
+            content = await api.export_checklists(params)
+            await picker.save_file(file_name="checklists.csv", src_bytes=content)
+        except Exception as ex:
+            th.show_snack(page, getattr(ex, "detail", "Falha ao exportar CSV"), th.ERROR)
+        finally:
+            page.services.remove(picker)
 
     all_list = ft.Column(scroll=ft.ScrollMode.AUTO, spacing=0, expand=True)
     all_content = ft.Column(
@@ -1217,7 +1221,7 @@ def build_manager_view(page: ft.Page, state: AppState) -> ft.View:
         if url:
             return ft.Container(
                 width=32, height=32, border_radius=16,
-                content=ft.Image(src=f"{state.media_base}{url}", fit=ft.ImageFit.COVER),
+                content=ft.Image(src=f"{state.media_base}{url}", fit=ft.BoxFit.COVER),
                 clip_behavior=ft.ClipBehavior.ANTI_ALIAS,
             )
         initial = state.display_name[:1].upper() if state.display_name else "?"
@@ -1272,7 +1276,7 @@ def build_manager_view(page: ft.Page, state: AppState) -> ft.View:
                         ft.PopupMenuItem(),
                         ft.PopupMenuItem("Editar perfil", icon=ft.Icons.EDIT_OUTLINED, on_click=lambda e: th.show_edit_profile_dialog(page, api, state, on_success=on_profile_success)),
                         ft.PopupMenuItem("Alterar senha", icon=ft.Icons.LOCK_RESET, on_click=lambda e: th.show_password_change_dialog(page, api)),
-                        ft.PopupMenuItem("Sair", icon=ft.Icons.LOGOUT, on_click=lambda e: _logout(page, state)),
+                        ft.PopupMenuItem("Sair", icon=ft.Icons.LOGOUT, on_click=lambda e: asyncio.create_task(_logout(page, state))),
                     ],
                 ),
             ],
@@ -1467,7 +1471,7 @@ def _build_review_card(page: ft.Page, c: dict, media_base: str = "", api=None, o
     emp_avatar = (
         ft.Container(
             width=40, height=40, border_radius=20,
-            content=ft.Image(src=f"{media_base}{avatar_url}", fit=ft.ImageFit.COVER),
+            content=ft.Image(src=f"{media_base}{avatar_url}", fit=ft.BoxFit.COVER),
             clip_behavior=ft.ClipBehavior.ANTI_ALIAS,
         )
         if avatar_url and media_base
@@ -1710,8 +1714,8 @@ def _build_user_card(u: dict, page: ft.Page, api, reload_fn, stats: dict | None 
                     "department_id": int(dept_dd.value) if dept_dd.value else None,
                 }
                 if password_field.value:
-                    if len(password_field.value) < 6:
-                        error_text.value = "Senha deve ter ao menos 6 caracteres"
+                    if len(password_field.value) < 8:
+                        error_text.value = "Senha deve ter ao menos 8 caracteres"
                         error_text.visible = True
                         page.update()
                         saving[0] = False
@@ -1826,7 +1830,7 @@ def _build_user_card(u: dict, page: ft.Page, api, reload_fn, stats: dict | None 
     _user_avatar = (
         ft.Container(
             width=44, height=44, border_radius=22,
-            content=ft.Image(src=f"{_media_base}{_avatar_url}", fit=ft.ImageFit.COVER),
+            content=ft.Image(src=f"{_media_base}{_avatar_url}", fit=ft.BoxFit.COVER),
             clip_behavior=ft.ClipBehavior.ANTI_ALIAS,
         )
         if _avatar_url and _media_base
@@ -1880,10 +1884,10 @@ def _build_user_card(u: dict, page: ft.Page, api, reload_fn, stats: dict | None 
     )
 
 
-def _logout(page: ft.Page, state: AppState):
+async def _logout(page: ft.Page, state: AppState):
     try:
-        page.client_storage.remove("auth_token")
-        page.client_storage.remove("auth_user")
+        await state.storage.remove("auth_token")
+        await state.storage.remove("auth_user")
     except Exception:
         pass
     state.logout()
