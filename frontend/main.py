@@ -57,9 +57,12 @@ def _build_splash_view() -> ft.View:
     )
 
 
-def main(page: ft.Page):
+async def main(page: ft.Page):
     # Uma instância por página/sessão; tokens e callbacks não podem ser globais.
     state = AppState()
+    state.storage = ft.SharedPreferences()
+    page.services.append(state.storage)
+    page.update()
     page.title = "Pizzaria Check-In"
     page.theme_mode = ft.ThemeMode.LIGHT
     page.theme = get_theme()
@@ -75,8 +78,8 @@ def main(page: ft.Page):
 
     # ── Session restoration ───────────────────────────────────────
     try:
-        _saved_token = page.client_storage.get("auth_token")
-        _saved_user = page.client_storage.get("auth_user")
+        _saved_token = await state.storage.get("auth_token")
+        _saved_user = await state.storage.get("auth_user")
         if _saved_token and _saved_user:
             state.token = _saved_token
             state.user = _json.loads(_saved_user)
@@ -98,7 +101,7 @@ def main(page: ft.Page):
             user = await api.get_me()
             state.user = user
             try:
-                page.client_storage.set("auth_user", _json.dumps(user))
+                await state.storage.set("auth_user", _json.dumps(user))
             except Exception:
                 pass
             notifs = await api.get_notifications()
@@ -106,8 +109,8 @@ def main(page: ft.Page):
         except APIError as ex:
             if ex.status_code in (401, 403):
                 try:
-                    page.client_storage.remove("auth_token")
-                    page.client_storage.remove("auth_user")
+                    await state.storage.remove("auth_token")
+                    await state.storage.remove("auth_user")
                 except Exception:
                     pass
                 state.logout()
@@ -119,7 +122,7 @@ def main(page: ft.Page):
         # First-run onboarding: show wizard if manager hasn't done setup yet
         if state.is_manager:
             try:
-                done = page.client_storage.get("onboarding_done")
+                done = await state.storage.get("onboarding_done")
             except Exception:
                 done = None
             if not done:
