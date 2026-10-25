@@ -8,10 +8,16 @@ pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 
 def verify_password(plain: str, hashed: str) -> bool:
-    return pwd_context.verify(plain, hashed)
+    try:
+        return pwd_context.verify(plain, hashed)
+    except (ValueError, TypeError):
+        return False
 
 
 def get_password_hash(password: str) -> str:
+    if len(password.encode("utf-8")) > 72:
+        from fastapi import HTTPException
+        raise HTTPException(422, "Senha excede o limite de 72 bytes do bcrypt")
     return pwd_context.hash(password)
 
 
