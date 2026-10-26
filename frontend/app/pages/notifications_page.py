@@ -157,7 +157,7 @@ def build_notifications_view(page: ft.Page, state: AppState) -> ft.View:
             bgcolor=ft.Colors.with_opacity(0.04, color) if not is_read[0] else th.SURFACE,
             border_radius=0,
             padding=ft.Padding.symmetric(horizontal=16, vertical=12),
-            border=ft.border.only(bottom=ft.BorderSide(color=th.SURFACE_VARIANT, width=1)),
+            border=ft.Border(bottom=ft.BorderSide(color=th.SURFACE_VARIANT, width=1)),
             ink=True,
         )
 
