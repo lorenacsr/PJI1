@@ -10,7 +10,7 @@ from app.schemas.user import UserCreate, UserUpdate, UserOut
 from app.core.security import get_password_hash
 from app.core.deps import get_current_user, get_current_manager
 from app.core.config import settings
-import aiofiles
+from app.core.uploads import persist_image
 import uuid as _uuid
 
 router = APIRouter(prefix="/users", tags=["users"])
@@ -119,10 +119,7 @@ async def upload_avatar(
     from app.core.images import read_image
     content, ext = await read_image(file, _AVATAR_MAX_SIZE)
     filename = f"avatar_{current_user.id}_{_uuid.uuid4().hex}.{ext}"
-    filepath = settings.upload_path / filename
-
-    async with aiofiles.open(filepath, "wb") as f:
-        await f.write(content)
+    persist_image(db, filename, content, ext)
 
     current_user.avatar_url = f"/uploads/{filename}"
     await db.flush()
