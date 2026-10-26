@@ -30,7 +30,7 @@ class SessionIsolation(unittest.IsolatedAsyncioTestCase):
                 self.client_storage = types.SimpleNamespace(get=lambda key: None)
                 self.services = []
                 self.views = []
-                self.route = ""
+                self.route = "/login"
 
             async def push_route(self, route):
                 self.route = route
@@ -55,8 +55,6 @@ class SessionIsolation(unittest.IsolatedAsyncioTestCase):
         await namespace["main"](first)
         await namespace["main"](second)
         await asyncio.sleep(0)
-        first.on_route_change(None)
-        second.on_route_change(None)
         self.assertEqual(len(observed), 2)
         self.assertIsNot(observed[0], observed[1])
         observed[0].token = "token-ficticio-primeira-sessao"
