@@ -190,7 +190,7 @@ def build_employee_view(page: ft.Page, state: AppState) -> ft.View:
                                 padding=ft.Padding.symmetric(horizontal=16, vertical=14),
                                 bgcolor=ft.Colors.with_opacity(0.08, banner_color),
                                 border_radius=14,
-                                border=ft.border.all(1, ft.Colors.with_opacity(0.18, banner_color)),
+                                border=ft.Border.all(1, ft.Colors.with_opacity(0.18, banner_color)),
                                 content=ft.Row(
                                     [
                                         ft.Icon(banner_icon, color=banner_color, size=30),
@@ -280,7 +280,7 @@ def build_employee_view(page: ft.Page, state: AppState) -> ft.View:
             ft.Container(
                 bgcolor=th.SURFACE,
                 padding=ft.Padding.symmetric(horizontal=12, vertical=8),
-                border=ft.border.only(bottom=ft.BorderSide(color=th.SURFACE_VARIANT, width=1)),
+                border=ft.Border(bottom=ft.BorderSide(color=th.SURFACE_VARIANT, width=1)),
                 content=ft.Column(
                     spacing=6,
                     controls=[
