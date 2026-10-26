@@ -171,7 +171,7 @@ def build_manager_view(page: ft.Page, state: AppState) -> ft.View:
                     expand=True,
                     bgcolor=ft.Colors.with_opacity(opacity, cell_color),
                     border_radius=8,
-                    border=ft.border.all(2, ft.Colors.with_opacity(0.6, cell_color)) if is_today else None,
+                    border=ft.Border.all(2, ft.Colors.with_opacity(0.6, cell_color)) if is_today else None,
                     padding=ft.Padding.symmetric(vertical=6, horizontal=2),
                     content=ft.Column(
                         [
@@ -482,7 +482,7 @@ def build_manager_view(page: ft.Page, state: AppState) -> ft.View:
             ft.Container(
                 bgcolor=th.SURFACE,
                 padding=ft.Padding.symmetric(horizontal=12, vertical=6),
-                border=ft.border.only(bottom=ft.BorderSide(color=th.SURFACE_VARIANT, width=1)),
+                border=ft.Border(bottom=ft.BorderSide(color=th.SURFACE_VARIANT, width=1)),
                 content=ft.Column(
                     [
                         ft.Row([all_search_field], spacing=8),
@@ -768,7 +768,7 @@ def build_manager_view(page: ft.Page, state: AppState) -> ft.View:
             ft.Container(
                 bgcolor=th.SURFACE,
                 padding=ft.Padding.symmetric(horizontal=12, vertical=8),
-                border=ft.border.only(bottom=ft.BorderSide(color=th.SURFACE_VARIANT, width=1)),
+                border=ft.Border(bottom=ft.BorderSide(color=th.SURFACE_VARIANT, width=1)),
                 content=ft.Column(
                     [
                         ft.Row(
@@ -944,7 +944,7 @@ def build_manager_view(page: ft.Page, state: AppState) -> ft.View:
 
         return ft.Container(
             padding=ft.Padding.symmetric(horizontal=16, vertical=10),
-            border=ft.border.only(bottom=ft.BorderSide(color=th.SURFACE_VARIANT, width=1)),
+            border=ft.Border(bottom=ft.BorderSide(color=th.SURFACE_VARIANT, width=1)),
             content=ft.Column(
                 [
                     ft.Row(
@@ -1056,7 +1056,7 @@ def build_manager_view(page: ft.Page, state: AppState) -> ft.View:
                     analysis_list.controls.append(
                         ft.Container(
                             padding=ft.Padding.symmetric(horizontal=16, vertical=8),
-                            border=ft.border.only(bottom=ft.BorderSide(color=th.SURFACE_VARIANT, width=1)),
+                            border=ft.Border(bottom=ft.BorderSide(color=th.SURFACE_VARIANT, width=1)),
                             content=ft.Column(
                                 [
                                     ft.Row(
@@ -1319,7 +1319,7 @@ def _build_dept_stats_section(dept_stats: list) -> ft.Container:
             width=148,
             bgcolor=ft.Colors.with_opacity(0.04, color),
             border_radius=12,
-            border=ft.border.all(1, ft.Colors.with_opacity(0.12, color)),
+            border=ft.Border.all(1, ft.Colors.with_opacity(0.12, color)),
             padding=ft.Padding.symmetric(horizontal=12, vertical=10),
             content=ft.Column(
                 [
@@ -1817,7 +1817,7 @@ def _build_user_card(u: dict, page: ft.Page, api, reload_fn, stats: dict | None 
                                 spacing=8,
                             ),
                             padding=ft.Padding.symmetric(horizontal=8, vertical=8),
-                            border=ft.border.only(bottom=ft.BorderSide(color=th.SURFACE_VARIANT, width=1)),
+                            border=ft.Border(bottom=ft.BorderSide(color=th.SURFACE_VARIANT, width=1)),
                         )
                     )
         except APIError as ex:
