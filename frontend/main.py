@@ -78,8 +78,8 @@ async def main(page: ft.Page):
 
     # ── Session restoration ───────────────────────────────────────
     try:
-        _saved_token = await state.storage.get("auth_token")
-        _saved_user = await state.storage.get("auth_user")
+        _saved_token = await asyncio.wait_for(state.storage.get("auth_token"), timeout=3)
+        _saved_user = await asyncio.wait_for(state.storage.get("auth_user"), timeout=3)
         if _saved_token and _saved_user:
             state.token = _saved_token
             state.user = _json.loads(_saved_user)
@@ -101,7 +101,7 @@ async def main(page: ft.Page):
             user = await api.get_me()
             state.user = user
             try:
-                await state.storage.set("auth_user", _json.dumps(user))
+                await asyncio.wait_for(state.storage.set("auth_user", _json.dumps(user)), timeout=3)
             except Exception:
                 pass
             notifs = await api.get_notifications()
@@ -109,8 +109,8 @@ async def main(page: ft.Page):
         except APIError as ex:
             if ex.status_code in (401, 403):
                 try:
-                    await state.storage.remove("auth_token")
-                    await state.storage.remove("auth_user")
+                    await asyncio.wait_for(state.storage.remove("auth_token"), timeout=3)
+                    await asyncio.wait_for(state.storage.remove("auth_user"), timeout=3)
                 except Exception:
                     pass
                 state.logout()
@@ -122,13 +122,17 @@ async def main(page: ft.Page):
         # First-run onboarding: show wizard if manager hasn't done setup yet
         if state.is_manager:
             try:
-                done = await state.storage.get("onboarding_done")
+                done = await asyncio.wait_for(state.storage.get("onboarding_done"), timeout=3)
             except Exception:
                 done = None
             if not done:
                 await page.push_route("/setup")
                 return
-        await page.push_route("/manager" if state.is_manager else "/employee")
+        destination = "/manager" if state.is_manager else "/employee"
+        if page.route == destination:
+            route_change(None)
+        else:
+            await page.push_route(destination)
 
     def route_change(e: ft.RouteChangeEvent):
         route = page.route
@@ -218,10 +222,16 @@ async def main(page: ft.Page):
     page.on_route_change = route_change
     page.on_view_pop = view_pop
 
+    # Render the initial view explicitly: pushing an unchanged URL emits no route event.
     if state.is_authenticated:
-        asyncio.create_task(page.push_route("/_splash"))
+        page.views.append(_build_splash_view())
+        page.update()
+        asyncio.create_task(_validate_and_route())
     else:
-        asyncio.create_task(page.push_route("/login"))
+        page.views.append(build_login_view(page, state))
+        page.update()
+        if page.route != "/login":
+            asyncio.create_task(page.push_route("/login"))
 
 
 if __name__ == "__main__":
