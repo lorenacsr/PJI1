@@ -47,3 +47,6 @@ Os testes HTTP usam SQLite descartável, com chaves estrangeiras; o teste da int
 - Há bloqueios de perfil, configuração de produção e neutralização de fórmulas no CSV. Não há certificação de segurança ou conformidade integral de acessibilidade.
 - Imagens antigas não são sobrescritas; a política de retenção e expurgo deve ser definida antes do uso real.
 - Java, JavaScript autoral e um módulo equivalente de estoque não foram implementados nesta base. A equipe deve compatibilizar o relatório e as exigências da disciplina com o código efetivamente entregue.
+
+## Persistência de fotos na demonstração
+Novas fotos e avatares são armazenados no PostgreSQL (`media_assets`), sem depender do disco temporário do Render. Consomem a cota do banco e precisam entrar no backup. Leia [a solução, os limites e a validação](docs/PERSISTENCIA_DAS_IMAGENS.md). Arquivos antigos apenas no disco não são migrados automaticamente.
