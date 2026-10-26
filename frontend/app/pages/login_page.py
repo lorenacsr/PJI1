@@ -63,9 +63,9 @@ def build_login_view(page: ft.Page, state: AppState) -> ft.View:
 
             try:
                 import json as _j
-                await state.storage.set("auth_token", state.token)
-                await state.storage.set("auth_user", _j.dumps(state.user))
-                await state.storage.set("last_email", email_field.value.strip().lower())
+                await asyncio.wait_for(state.storage.set("auth_token", state.token), timeout=3)
+                await asyncio.wait_for(state.storage.set("auth_user", _j.dumps(state.user)), timeout=3)
+                await asyncio.wait_for(state.storage.set("last_email", email_field.value.strip().lower()), timeout=3)
             except Exception:
                 pass
 
@@ -93,7 +93,10 @@ def build_login_view(page: ft.Page, state: AppState) -> ft.View:
 
     async def restore_last_email():
         if state.storage:
-            value = await state.storage.get("last_email")
+            try:
+                value = await asyncio.wait_for(state.storage.get("last_email"), timeout=3)
+            except Exception:
+                return
             if value and not email_field.value:
                 email_field.value = value
                 page.update()
