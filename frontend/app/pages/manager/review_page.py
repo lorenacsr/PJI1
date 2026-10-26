@@ -241,7 +241,7 @@ def build_review_view(page: ft.Page, state: AppState, checklist_id: str) -> ft.V
                     spacing=10,
                 ),
                 padding=ft.Padding.symmetric(horizontal=16, vertical=10),
-                border=ft.border.only(bottom=ft.BorderSide(color=th.SURFACE_VARIANT, width=1)
+                border=ft.Border(bottom=ft.BorderSide(color=th.SURFACE_VARIANT, width=1)
                                       if not has_more else ft.BorderSide(color=th.SURFACE_VARIANT, width=0)),
             )
         ]
@@ -258,7 +258,7 @@ def build_review_view(page: ft.Page, state: AppState, checklist_id: str) -> ft.V
                         vertical_alignment=ft.CrossAxisAlignment.START,
                     ),
                     padding=ft.Padding.only(left=48, right=16, bottom=8),
-                    border=ft.border.only(bottom=ft.BorderSide(color=th.SURFACE_VARIANT, width=1)
+                    border=ft.Border(bottom=ft.BorderSide(color=th.SURFACE_VARIANT, width=1)
                                           if not photo_url else ft.BorderSide(color=th.SURFACE_VARIANT, width=0)),
                 )
             )
@@ -269,7 +269,7 @@ def build_review_view(page: ft.Page, state: AppState, checklist_id: str) -> ft.V
                 ft.Container(
                     content=ft.Image(src=full_url, width=160, height=120, fit=ft.BoxFit.COVER, border_radius=10),
                     margin=ft.Margin.only(left=48, bottom=8, right=16),
-                    border=ft.border.only(bottom=ft.BorderSide(color=th.SURFACE_VARIANT, width=1)),
+                    border=ft.Border(bottom=ft.BorderSide(color=th.SURFACE_VARIANT, width=1)),
                     on_click=lambda e, u=full_url: th.show_photo_dialog(page, u),
                     border_radius=10,
                     tooltip="Toque para ampliar",
