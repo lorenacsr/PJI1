@@ -85,6 +85,15 @@ def test_complete_workflow(scenario):
         assert (await req('POST',f'/checklists/{cid}/items/{photo["id"]}/photo',files={'file':('fake.png',b'not an image','image/png')})).status_code==400
         r=await req('POST',f'/checklists/{cid}/items/{photo["id"]}/photo',files={'file':('real.png',image_bytes(),'image/png')});assert r.status_code==200,r.text
         photo_url=r.json()['items'][1]['photo_url']
+        # The committed image survives a fresh database connection without disk files.
+        from app.models.media_asset import MediaAsset
+        from pathlib import Path
+        filename=photo_url.split('?')[0].rsplit('/',1)[-1]
+        assert not (Path(settings.UPLOAD_DIR)/filename).exists()
+        await factory.kw['bind'].dispose()
+        async with factory() as fresh_session:
+            stored=await fresh_session.get(MediaAsset,filename)
+            assert stored.content==image_bytes() and stored.content_type=='image/png'
         assert (await c.get(photo_url)).status_code==200
         assert (await c.get(photo_url.split('?')[0])).status_code==403
         assert (await req('POST',f'/checklists/{cid}/submit')).status_code==200
