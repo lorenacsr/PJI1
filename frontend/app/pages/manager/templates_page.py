@@ -64,7 +64,7 @@ def build_templates_content(page: ft.Page, api: APIClient) -> tuple:
             ft.Container(
                 bgcolor=th.SURFACE,
                 padding=ft.Padding.symmetric(horizontal=12, vertical=10),
-                border=ft.border.only(bottom=ft.BorderSide(color=th.SURFACE_VARIANT, width=1)),
+                border=ft.Border(bottom=ft.BorderSide(color=th.SURFACE_VARIANT, width=1)),
                 content=ft.Column(
                     spacing=8,
                     controls=[
@@ -380,7 +380,7 @@ def build_templates_content(page: ft.Page, api: APIClient) -> tuple:
                     spacing=2,
                 ),
                 padding=ft.Padding.symmetric(horizontal=4, vertical=4),
-                border=ft.border.only(bottom=ft.BorderSide(color=th.SURFACE_VARIANT, width=1)),
+                border=ft.Border(bottom=ft.BorderSide(color=th.SURFACE_VARIANT, width=1)),
             )
 
         async def _add_item(e):
