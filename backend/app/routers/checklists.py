@@ -22,7 +22,7 @@ from app.schemas.checklist import (
 from app.core.deps import get_current_user, get_current_manager
 from app.core.config import settings
 from app.db.session import queue_notification
-import aiofiles
+from app.core.uploads import persist_image
 
 router = APIRouter(prefix="/checklists", tags=["checklists"])
 
@@ -941,9 +941,7 @@ async def upload_item_photo(
 
     content, ext = await read_image(file, 5 * 1024 * 1024)
     filename = f"check_{item_id}_{uuid.uuid4().hex}.{ext}"
-    filepath = settings.upload_path / filename
-    async with aiofiles.open(filepath, "wb") as f:
-        await f.write(content)
+    persist_image(db, filename, content, ext)
 
     item.photo_url = f"/uploads/{filename}"
     item.status = ItemStatus.DONE
