@@ -501,7 +501,7 @@ def build_checklist_view(page: ft.Page, state: AppState, checklist_id: str) -> f
                 ),
                 bgcolor=th.SURFACE,
                 padding=ft.Padding.symmetric(horizontal=4, vertical=8),
-                border=ft.border.only(bottom=ft.BorderSide(color=th.SURFACE_VARIANT, width=1)
+                border=ft.Border(bottom=ft.BorderSide(color=th.SURFACE_VARIANT, width=1)
                                       if not existing_notes and not photo_url else ft.BorderSide(color=th.SURFACE_VARIANT, width=0)),
             )
         ]
@@ -518,7 +518,7 @@ def build_checklist_view(page: ft.Page, state: AppState, checklist_id: str) -> f
                         vertical_alignment=ft.CrossAxisAlignment.START,
                     ),
                     padding=ft.Padding.only(left=52, right=16, bottom=8),
-                    border=ft.border.only(bottom=ft.BorderSide(color=th.SURFACE_VARIANT, width=1)
+                    border=ft.Border(bottom=ft.BorderSide(color=th.SURFACE_VARIANT, width=1)
                                           if not photo_url else ft.BorderSide(color=th.SURFACE_VARIANT, width=0)),
                 )
             )
@@ -529,7 +529,7 @@ def build_checklist_view(page: ft.Page, state: AppState, checklist_id: str) -> f
                 ft.Container(
                     content=ft.Image(src=full_url, width=120, height=90, fit=ft.BoxFit.COVER, border_radius=8),
                     margin=ft.Margin.only(left=56, bottom=8),
-                    border=ft.border.only(bottom=ft.BorderSide(color=th.SURFACE_VARIANT, width=1)),
+                    border=ft.Border(bottom=ft.BorderSide(color=th.SURFACE_VARIANT, width=1)),
                     on_click=lambda e, u=full_url: th.show_photo_dialog(page, u),
                     border_radius=8,
                     tooltip="Toque para ampliar",
