@@ -308,7 +308,7 @@ def build_setup_view(page: ft.Page, state: AppState) -> ft.View:
                     return
                 step[0] = 3
                 try:
-                    await state.storage.set("onboarding_done", "1")
+                    await asyncio.wait_for(state.storage.set("onboarding_done", "1"), timeout=3)
                 except Exception:
                     pass
             elif step[0] == 3:
