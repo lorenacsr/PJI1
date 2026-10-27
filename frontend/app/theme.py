@@ -3,7 +3,7 @@ import flet as ft
 PRIMARY = "#C62828"
 PRIMARY_DARK = "#8E0000"
 PRIMARY_LIGHT = "#FF5F52"
-SECONDARY = "#FF6F00"
+SECONDARY = "#9C4300"
 BG = "#F8F9FA"
 SURFACE = "#FFFFFF"
 SURFACE_VARIANT = "#F5F5F5"
@@ -39,12 +39,12 @@ DEPT_ICONS = {
 }
 
 DEPT_COLORS = {
-    "DELIVERY": "#E53935",
-    "CAIXA": "#FB8C00",
-    "HOSTESS": "#8E24AA",
-    "BAR": "#00ACC1",
-    "COZINHA_NOITE": "#F4511E",
-    "COZINHA_MANHA": "#FFB300",
+    "DELIVERY": "#C62828",
+    "CAIXA": "#9C4300",
+    "HOSTESS": "#6A1B9A",
+    "BAR": "#006064",
+    "COZINHA_NOITE": "#A63A00",
+    "COZINHA_MANHA": "#765500",
 }
 
 
@@ -126,7 +126,7 @@ def show_edit_profile_dialog(page, api, state, on_success=None):
     def _avatar_content():
         src = _avatar_src()
         if src:
-            return ft.Image(src=src, width=72, height=72, fit=ft.BoxFit.COVER, border_radius=36)
+            return ft.Image(src=src, semantics_label=f"Foto de perfil de {state.display_name}", width=72, height=72, fit=ft.BoxFit.COVER, border_radius=36)
         return ft.Text(
             state.display_name[:1].upper(), size=26,
             weight=ft.FontWeight.BOLD, color=ft.Colors.WHITE,
@@ -323,7 +323,7 @@ def show_password_change_dialog(page, api):
     page.show_dialog(dlg)
 
 
-def show_photo_dialog(page: ft.Page, url: str):
+def show_photo_dialog(page: ft.Page, url: str, description: str = "Foto de evidência do checklist ampliada"):
     def close(e):
         dlg.open = False
         page.update()
@@ -331,7 +331,7 @@ def show_photo_dialog(page: ft.Page, url: str):
     dlg = ft.AlertDialog(
         modal=True,
         content=ft.Container(
-            content=ft.Image(src=url, fit=ft.BoxFit.CONTAIN, expand=True),
+            content=ft.Image(src=url, semantics_label=description, fit=ft.BoxFit.CONTAIN, expand=True),
             bgcolor=ft.Colors.BLACK,
             width=380,
             height=480,
@@ -342,7 +342,7 @@ def show_photo_dialog(page: ft.Page, url: str):
             ft.TextButton(
                 "Fechar",
                 on_click=close,
-                style=ft.ButtonStyle(color=ft.Colors.WHITE70),
+                style=ft.ButtonStyle(color=ft.Colors.WHITE),
             )
         ],
         actions_alignment=ft.MainAxisAlignment.END,
