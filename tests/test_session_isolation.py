@@ -47,7 +47,9 @@ class SessionIsolation(unittest.IsolatedAsyncioTestCase):
             observed.append(state)
             return object()
 
+        from app.accessibility import configure_accessibility
         namespace = {"ft": ft, "AppState": AppState, "get_theme": lambda: None,
+                     "configure_accessibility": configure_accessibility,
                      "asyncio": asyncio, "_json": json, "build_login_view": login_view}
         module = ast.Module(body=[main_node], type_ignores=[])
         exec(compile(ast.fix_missing_locations(module), "frontend/main.py", "exec"), namespace)
