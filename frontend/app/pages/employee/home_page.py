@@ -560,7 +560,7 @@ def build_employee_view(page: ft.Page, state: AppState) -> ft.View:
         if url:
             return ft.Container(
                 width=32, height=32, border_radius=16,
-                content=ft.Image(src=f"{state.media_base}{url}", fit=ft.BoxFit.COVER),
+                content=ft.Image(src=f"{state.media_base}{url}", semantics_label=f"Foto de perfil de {state.display_name}", fit=ft.BoxFit.COVER),
                 clip_behavior=ft.ClipBehavior.ANTI_ALIAS,
             )
         initial = state.display_name[:1].upper() if state.display_name else "?"
