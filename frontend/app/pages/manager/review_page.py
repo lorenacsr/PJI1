@@ -120,7 +120,7 @@ def build_review_view(page: ft.Page, state: AppState, checklist_id: str) -> ft.V
         if emp_avatar_url and state.media_base:
             emp_avatar_widget = ft.Container(
                 width=52, height=52, border_radius=26,
-                content=ft.Image(src=f"{state.media_base}{emp_avatar_url}", fit=ft.BoxFit.COVER),
+                content=ft.Image(src=f"{state.media_base}{emp_avatar_url}", semantics_label=f"Foto de perfil de {emp_name}", fit=ft.BoxFit.COVER),
                 clip_behavior=ft.ClipBehavior.ANTI_ALIAS,
             )
         else:
@@ -179,7 +179,7 @@ def build_review_view(page: ft.Page, state: AppState, checklist_id: str) -> ft.V
                         on_click=lambda e, u=full_url: th.show_photo_dialog(page, u),
                         content=ft.Stack(
                             [
-                                ft.Image(src=full_url, fit=ft.BoxFit.COVER, expand=True),
+                                ft.Image(src=full_url, semantics_label=f"Evidência da tarefa: {caption}", fit=ft.BoxFit.COVER, expand=True),
                                 ft.Container(
                                     content=ft.Text(
                                         caption[:22] + ("…" if len(caption) > 22 else ""),
@@ -267,7 +267,7 @@ def build_review_view(page: ft.Page, state: AppState, checklist_id: str) -> ft.V
             full_url = f"{state.media_base}{photo_url}"
             controls.append(
                 ft.Container(
-                    content=ft.Image(src=full_url, width=160, height=120, fit=ft.BoxFit.COVER, border_radius=10),
+                    content=ft.Image(src=full_url, semantics_label=f"Evidência da tarefa: {title}", width=160, height=120, fit=ft.BoxFit.COVER, border_radius=10),
                     margin=ft.Margin.only(left=48, bottom=8, right=16),
                     border=ft.Border(bottom=ft.BorderSide(color=th.SURFACE_VARIANT, width=1)),
                     on_click=lambda e, u=full_url: th.show_photo_dialog(page, u),
