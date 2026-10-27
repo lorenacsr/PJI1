@@ -116,15 +116,15 @@ def build_checklist_view(page: ft.Page, state: AppState, checklist_id: str) -> f
         if status == "SUBMITTED":
             submitted_at = _fmt_dt(data.get("submitted_at", ""))
             review_banner.visible = True
-            review_banner.bgcolor = ft.Colors.with_opacity(0.08, "#2196F3")
+            review_banner.bgcolor = ft.Colors.with_opacity(0.08, "#1565C0")
             review_banner.padding = ft.Padding.symmetric(horizontal=16, vertical=10)
             review_banner.content = ft.Row(
                 [
-                    ft.Icon(ft.Icons.HOURGLASS_BOTTOM, color="#2196F3", size=18),
+                    ft.Icon(ft.Icons.HOURGLASS_BOTTOM, color="#1565C0", size=18),
                     ft.Column(
                         [
-                            ft.Text("Aguardando revisão do gestor", size=13, color="#2196F3", weight=ft.FontWeight.W_500),
-                            ft.Text(f"Enviado {submitted_at}", size=11, color="#2196F3", visible=bool(submitted_at)),
+                            ft.Text("Aguardando revisão do gestor", size=13, color="#1565C0", weight=ft.FontWeight.W_500),
+                            ft.Text(f"Enviado {submitted_at}", size=11, color="#1565C0", visible=bool(submitted_at)),
                         ],
                         spacing=1, expand=True,
                     ),
@@ -527,10 +527,10 @@ def build_checklist_view(page: ft.Page, state: AppState, checklist_id: str) -> f
             full_url = f"{state.media_base}{photo_url}"
             controls.append(
                 ft.Container(
-                    content=ft.Image(src=full_url, width=120, height=90, fit=ft.BoxFit.COVER, border_radius=8),
+                    content=ft.Image(src=full_url, semantics_label=f"Evidência da tarefa: {title}", width=120, height=90, fit=ft.BoxFit.COVER, border_radius=8),
                     margin=ft.Margin.only(left=56, bottom=8),
                     border=ft.Border(bottom=ft.BorderSide(color=th.SURFACE_VARIANT, width=1)),
-                    on_click=lambda e, u=full_url: th.show_photo_dialog(page, u),
+                    on_click=lambda e, u=full_url: th.show_photo_dialog(page, u, f"Evidência da tarefa: {title}"),
                     border_radius=8,
                     tooltip="Toque para ampliar",
                 )
