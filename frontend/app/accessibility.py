@@ -30,6 +30,9 @@ def apply_text_size(root, scale=1.0):
     scale = max(1.0, min(2.0, float(scale)))
     for control in walk_controls(root):
         if isinstance(control, ft.Text):
+            # Subtítulos brancos translúcidos perdiam contraste sobre o vermelho.
+            if isinstance(control.color, str) and control.color.startswith('white,'):
+                control.color = '#FFFFFF'
             if not hasattr(control, '_a11y_base_size'):
                 control._a11y_base_size = max(14, control.size or 14)
             control.size = control._a11y_base_size * scale
