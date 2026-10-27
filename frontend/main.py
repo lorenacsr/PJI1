@@ -6,6 +6,7 @@ import json as _json
 
 sys.path.insert(0, os.path.dirname(__file__))
 
+from app.accessibility import configure_accessibility
 from app.state import AppState
 from app.theme import get_theme
 from app.pages.login_page import build_login_view
@@ -59,6 +60,7 @@ def _build_splash_view() -> ft.View:
 
 async def main(page: ft.Page):
     # Uma instância por página/sessão; tokens e callbacks não podem ser globais.
+    configure_accessibility(page)
     state = AppState()
     state.storage = ft.SharedPreferences()
     page.services.append(state.storage)
