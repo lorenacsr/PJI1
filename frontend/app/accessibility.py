@@ -53,23 +53,23 @@ def apply_text_size(root, scale=1.0):
 
 
 def show_accessibility(page):
-    percent = ft.Text(f'{round(page._a11y_scale * 100)}%', semantics_label='Tamanho atual do texto')
+    percent = ft.Text(f'{round(page._a11y_scale * 100)}%')
     def change(event):
-        page._a11y_scale = max(1.0, min(2.0, float(event.control.value)))
+        page._a11y_scale = max(1.0, min(2.0, float(event.control.value) / 100))
         percent.value = f'{round(page._a11y_scale * 100)}%'
         page.update()
-    slider = ft.Slider(min=1, max=2, divisions=4, value=page._a11y_scale,
-                       label='{value}x', on_change=change)
+    slider = ft.Slider(min=100, max=200, divisions=4, value=page._a11y_scale * 100,
+                       label='{value}%', on_change=change)
     def reset(event):
         page._a11y_scale = 1.0
-        slider.value = 1.0
+        slider.value = 100
         percent.value = '100%'
         page.update()
     def close(event):
         dialog.open = False
         page.update()
     dialog = ft.AlertDialog(
-        title=ft.Text('Acessibilidade'), scrollable=True,
+        title=ft.Text('Acessibilidade', size=20), scrollable=True,
         content=ft.Column([
             ft.Text('Tamanho do texto de 100% a 200%. A preferência vale nesta sessão.'),
             percent,
@@ -94,7 +94,8 @@ def configure_accessibility(page):
                                        icon_color='#FFFFFF',
                                        on_click=lambda event: show_accessibility(page))
                 if view.appbar is None:
-                    view.appbar = ft.AppBar(bgcolor='#C62828', toolbar_height=48, actions=[button])
+                    view.appbar = ft.AppBar(bgcolor='#C62828', toolbar_height=48,
+                                           automatically_imply_leading=False, actions=[button])
                 else:
                     view.appbar.actions = [*(view.appbar.actions or []), button]
                 view._a11y_menu_added = True
