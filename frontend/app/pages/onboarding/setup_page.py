@@ -141,8 +141,10 @@ def build_setup_view(page: ft.Page, state: AppState) -> ft.View:
             for d in existing:
                 if not any(x["id"] == d["id"] for x in depts_state):
                     depts_state.append({"id": d["id"], "display_name": d["display_name"], "existing": True})
+        except APIError as ex:
+            error_text.value = ex.detail
         except Exception:
-            pass
+            error_text.value = "Não foi possível carregar os departamentos. Verifique a conexão e tente novamente."
         _render_dept_list()
 
     def _add_dept(_):
@@ -254,12 +256,9 @@ def build_setup_view(page: ft.Page, state: AppState) -> ft.View:
     async def _save_departments():
         for d in depts_state:
             if not d.get("existing"):
-                try:
-                    created = await api.create_department(d["display_name"])
-                    d["id"] = created["id"]
-                    d["existing"] = True
-                except Exception:
-                    pass
+                created = await api.create_department(d["display_name"])
+                d["id"] = created["id"]
+                d["existing"] = True
 
     async def _save_manager():
         name = (mgr_name.value or "").strip()
@@ -317,6 +316,10 @@ def build_setup_view(page: ft.Page, state: AppState) -> ft.View:
 
             _update_indicator()
             _steps[step[0]]()
+        except APIError as ex:
+            error_text.value = ex.detail
+        except Exception:
+            error_text.value = "Não foi possível salvar a configuração. Verifique a conexão e tente novamente; os campos foram mantidos."
         finally:
             loading.visible = False
             next_btn.disabled = False
