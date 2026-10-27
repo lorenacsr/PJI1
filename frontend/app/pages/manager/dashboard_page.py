@@ -280,7 +280,7 @@ def build_manager_view(page: ft.Page, state: AppState) -> ft.View:
                                 if av_url and state.media_base:
                                     leading = ft.Container(
                                         width=36, height=36, border_radius=18,
-                                        content=ft.Image(src=f"{state.media_base}{av_url}", fit=ft.BoxFit.COVER),
+                                        content=ft.Image(src=f"{state.media_base}{av_url}", semantics_label=f"Foto de perfil de {emp.get('name', 'colaborador')}", fit=ft.BoxFit.COVER),
                                         clip_behavior=ft.ClipBehavior.ANTI_ALIAS,
                                     )
                                 else:
@@ -1221,7 +1221,7 @@ def build_manager_view(page: ft.Page, state: AppState) -> ft.View:
         if url:
             return ft.Container(
                 width=32, height=32, border_radius=16,
-                content=ft.Image(src=f"{state.media_base}{url}", fit=ft.BoxFit.COVER),
+                content=ft.Image(src=f"{state.media_base}{url}", semantics_label=f"Foto de perfil de {state.display_name}", fit=ft.BoxFit.COVER),
                 clip_behavior=ft.ClipBehavior.ANTI_ALIAS,
             )
         initial = state.display_name[:1].upper() if state.display_name else "?"
@@ -1471,7 +1471,7 @@ def _build_review_card(page: ft.Page, c: dict, media_base: str = "", api=None, o
     emp_avatar = (
         ft.Container(
             width=40, height=40, border_radius=20,
-            content=ft.Image(src=f"{media_base}{avatar_url}", fit=ft.BoxFit.COVER),
+            content=ft.Image(src=f"{media_base}{avatar_url}", semantics_label=f"Foto de perfil de {name}", fit=ft.BoxFit.COVER),
             clip_behavior=ft.ClipBehavior.ANTI_ALIAS,
         )
         if avatar_url and media_base
@@ -1830,7 +1830,7 @@ def _build_user_card(u: dict, page: ft.Page, api, reload_fn, stats: dict | None 
     _user_avatar = (
         ft.Container(
             width=44, height=44, border_radius=22,
-            content=ft.Image(src=f"{_media_base}{_avatar_url}", fit=ft.BoxFit.COVER),
+            content=ft.Image(src=f"{_media_base}{_avatar_url}", semantics_label=f"Foto de perfil de {u.get('name', 'colaborador')}", fit=ft.BoxFit.COVER),
             clip_behavior=ft.ClipBehavior.ANTI_ALIAS,
         )
         if _avatar_url and _media_base
