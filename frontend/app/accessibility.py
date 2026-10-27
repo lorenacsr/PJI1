@@ -78,8 +78,11 @@ def show_accessibility(page):
             percent,
             ft.Semantics(content=slider, label='Aumentar o tamanho do texto de 100 a 200 por cento'),
             ft.Text('Você também pode usar o zoom do navegador. As situações do checklist têm rótulos além das cores.'),
-        ], tight=True, spacing=12),
-        actions=[ft.TextButton('Restaurar 100%', on_click=reset), ft.TextButton('Fechar', on_click=close)],
+            ft.Column([
+                ft.TextButton('Restaurar 100%', on_click=reset, width=float('inf')),
+                ft.TextButton('Fechar', on_click=close, width=float('inf')),
+            ], tight=True, spacing=8),
+        ], tight=True, spacing=12, width=max(180, min(440, (page.width or 360) - 96))),
     )
     page.show_dialog(dialog)
 
@@ -102,5 +105,9 @@ def configure_accessibility(page):
                 else:
                     view.appbar.actions = [*(view.appbar.actions or []), button]
                 view._a11y_menu_added = True
+            if view.appbar is not None:
+                if not hasattr(view.appbar, '_a11y_base_height'):
+                    view.appbar._a11y_base_height = view.appbar.toolbar_height or 64
+                view.appbar.toolbar_height = view.appbar._a11y_base_height * page._a11y_scale
         apply_text_size(page, page._a11y_scale)
     page.before_update = before_update
