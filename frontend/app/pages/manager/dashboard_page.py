@@ -1257,6 +1257,7 @@ def build_manager_view(page: ft.Page, state: AppState) -> ft.View:
         padding=0,
         appbar=ft.AppBar(
             bgcolor=th.PRIMARY,
+            toolbar_height=80,
             title=ft.Text("Painel do Gestor", color=ft.Colors.WHITE, weight=ft.FontWeight.BOLD),
             actions=[
                 ft.IconButton(
@@ -1269,7 +1270,11 @@ def build_manager_view(page: ft.Page, state: AppState) -> ft.View:
                 ),
                 notif_btn,
                 ft.PopupMenuButton(
-                    content=ft.Container(content=account_avatar, padding=ft.Padding.all(8)),
+                    tooltip="Minha conta: editar perfil, alterar senha ou sair",
+                    content=ft.Container(content=ft.Column([
+                        account_avatar,
+                        ft.Text("Conta", size=12, color=ft.Colors.WHITE),
+                    ], tight=True, spacing=0, horizontal_alignment=ft.CrossAxisAlignment.CENTER), padding=ft.Padding.symmetric(horizontal=8)),
                     items=[
                         profile_name_item,
                         profile_info_item,
@@ -1842,45 +1847,31 @@ def _build_user_card(u: dict, page: ft.Page, api, reload_fn, stats: dict | None 
     )
 
     return th.card(
-        ft.Row(
-            [
+        ft.Column([
+            ft.Row([
                 _user_avatar,
-                ft.Column(
-                    [
-                        ft.Row(
-                            [
-                                ft.Text(u.get("name", "—"), size=14, weight=ft.FontWeight.W_600, expand=True),
-                                ft.Container(
-                                    content=ft.Text(role_labels.get(role, role), size=11, color=ft.Colors.WHITE, weight=ft.FontWeight.W_600),
-                                    bgcolor=role_colors.get(role, th.PRIMARY),
-                                    border_radius=10,
-                                    padding=ft.Padding.symmetric(horizontal=8, vertical=3),
-                                ),
-                            ],
-                        ),
-                        ft.Text(u.get("department_name") or "Sem setor", size=12, color=th.ON_SURFACE_VARIANT),
-                        ft.Text(u.get("email", ""), size=11, color=th.ON_SURFACE_VARIANT, italic=True),
-                        _build_user_stats_line(stats),
-                    ],
-                    spacing=2, expand=True,
-                ),
-                ft.Container(
-                    width=10, height=10, border_radius=5,
-                    bgcolor=th.STATUS_COLORS["APPROVED"] if is_active else th.STATUS_COLORS["REJECTED"],
-                    tooltip="Ativo" if is_active else "Inativo",
-                ),
+                ft.Text("Ativo" if is_active else "Inativo", size=12,
+                        color=th.STATUS_COLORS["APPROVED"] if is_active else th.STATUS_COLORS["REJECTED"], expand=True),
                 ft.PopupMenuButton(
                     icon=ft.Icons.MORE_VERT,
+                    tooltip="Opções da conta: editar ou ver histórico",
                     icon_color=th.ON_SURFACE_VARIANT,
                     items=[
                         ft.PopupMenuItem("Editar", icon=ft.Icons.EDIT_OUTLINED, on_click=on_edit),
                         ft.PopupMenuItem("Ver histórico", icon=ft.Icons.HISTORY, on_click=lambda e: asyncio.create_task(_open_history())),
                     ],
                 ),
-            ],
-            vertical_alignment=ft.CrossAxisAlignment.CENTER,
-            spacing=12,
-        )
+            ], spacing=12),
+            ft.Text(u.get("name", "—"), size=14, weight=ft.FontWeight.W_600),
+            ft.Container(
+                content=ft.Text(role_labels.get(role, role), size=11, color=ft.Colors.WHITE, weight=ft.FontWeight.W_600),
+                bgcolor=role_colors.get(role, th.PRIMARY), border_radius=10,
+                padding=ft.Padding.symmetric(horizontal=8, vertical=3),
+            ),
+            ft.Text(u.get("department_name") or "Sem setor", size=12, color=th.ON_SURFACE_VARIANT),
+            ft.Text(u.get("email", ""), size=11, color=th.ON_SURFACE_VARIANT, italic=True),
+            _build_user_stats_line(stats),
+        ], spacing=8)
     )
 
 
