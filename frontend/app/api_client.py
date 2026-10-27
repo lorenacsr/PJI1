@@ -23,11 +23,17 @@ class APIClient:
 
     async def _handle(self, response: httpx.Response) -> dict:
         if response.status_code >= 400:
-            try:
-                detail = response.json().get("detail", response.text)
-            except Exception:
-                detail = response.text
-            raise APIError(response.status_code, str(detail))
+            if response.status_code in (502, 503, 504):
+                detail = "O serviço está temporariamente indisponível. Aguarde um momento e tente novamente. Seus dados preenchidos foram mantidos nesta tela."
+            else:
+                try:
+                    payload = response.json()
+                    detail = payload.get("detail") if isinstance(payload, dict) else None
+                except (ValueError, TypeError):
+                    detail = None
+                if not isinstance(detail, str) or "<html" in detail.lower() or "<!doctype" in detail.lower():
+                    detail = "Não foi possível concluir a solicitação. Tente novamente."
+            raise APIError(response.status_code, detail)
         try:
             return response.json()
         except Exception:
