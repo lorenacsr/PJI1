@@ -2,9 +2,11 @@
 import ast
 import unittest
 from pathlib import Path
+from types import SimpleNamespace
+from unittest.mock import patch
 import flet as ft
 from app.accessibility import apply_text_size, configure_accessibility
-from app import theme
+from app import a11y, theme
 
 
 def contrast(a, b):
@@ -43,10 +45,19 @@ class Accessibility(unittest.TestCase):
             def __init__(self):self.views=[ft.View(controls=[ft.Text('Olá')])]
         a,b=Page(),Page()
         configure_accessibility(a);configure_accessibility(b)
-        a._a11y_scale=2
+        a11y._sess(a).prefs.font_index = 3
         a.before_update();a.before_update();b.before_update()
         self.assertEqual(len(a.views[0].appbar.actions),1)
-        self.assertEqual(b._a11y_scale,1)
+        self.assertEqual(a.views[0].controls[0].size, 21)
+        self.assertEqual(b.views[0].controls[0].size, 14)
+
+    def test_contrast_follows_current_page(self):
+        normal = SimpleNamespace()
+        high = SimpleNamespace()
+        a11y._sess(high).prefs.high_contrast = True
+        for page, primary in [(normal, "#C62828"), (high, "#8E0000"), (normal, "#C62828")]:
+            with patch.object(ft, "context", SimpleNamespace(page=page)):
+                self.assertEqual(theme.get_theme().color_scheme.primary, primary)
 
     def test_every_image_has_explicit_description(self):
         root=Path(__file__).resolve().parents[1]/'frontend'

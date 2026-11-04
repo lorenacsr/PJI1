@@ -47,9 +47,13 @@ class SessionIsolation(unittest.IsolatedAsyncioTestCase):
             observed.append(state)
             return object()
 
+        import flet
+        from app import a11y
         from app.accessibility import configure_accessibility
+        ft.Locale = flet.Locale
+        ft.LocaleConfiguration = flet.LocaleConfiguration
         namespace = {"ft": ft, "AppState": AppState, "get_theme": lambda: None,
-                     "configure_accessibility": configure_accessibility,
+                     "configure_accessibility": configure_accessibility, "a11y": a11y,
                      "asyncio": asyncio, "_json": json, "build_login_view": login_view}
         module = ast.Module(body=[main_node], type_ignores=[])
         exec(compile(ast.fix_missing_locations(module), "frontend/main.py", "exec"), namespace)
