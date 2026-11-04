@@ -1,24 +1,94 @@
+from types import MappingProxyType
+
 import flet as ft
 
-PRIMARY = "#C62828"
-PRIMARY_DARK = "#8E0000"
-PRIMARY_LIGHT = "#FF5F52"
-SECONDARY = "#9C4300"
-BG = "#F8F9FA"
-SURFACE = "#FFFFFF"
-SURFACE_VARIANT = "#F5F5F5"
-ON_SURFACE = "#212121"
-ON_SURFACE_VARIANT = "#616161"
-ERROR = "#B00020"
+# ── Paleta ────────────────────────────────────────────────────────────────
+# Todas as combinações texto/fundo abaixo atingem contraste mínimo de 4,5:1
+# (WCAG 2.2 AA, critério 1.4.3). No modo "alto contraste" chegam a 7:1 ou mais
+# (nível AAA). A cor nunca é o único meio de informação: todo status tem texto.
+_NORMAL_PALETTE = {
+    "PRIMARY": "#C62828",
+    "PRIMARY_DARK": "#8E0000",
+    "PRIMARY_LIGHT": "#FF5F52",
+    "SECONDARY": "#9C4300",        # antes #FF6F00 (2,8:1 sobre branco)
+    "WARNING": "#B34700",
+    "BG": "#F8F9FA",
+    "SURFACE": "#FFFFFF",
+    "SURFACE_VARIANT": "#F5F5F5",
+    "ON_SURFACE": "#212121",
+    "ON_SURFACE_VARIANT": "#616161",
+    "ERROR": "#B00020",
+}
 
-STATUS_COLORS = {
-    "IN_PROGRESS": "#1565C0",
-    "SUBMITTED": "#9C4A00",
-    "APPROVED": "#256D2B",
-    "REJECTED": "#B71C1C",
-    "PENDING": "#616161",
+_HIGH_CONTRAST_PALETTE = {
+    "PRIMARY": "#8E0000",
+    "PRIMARY_DARK": "#5F0000",
+    "PRIMARY_LIGHT": "#B71C1C",
+    "SECONDARY": "#7A3300",
+    "WARNING": "#7A3300",
+    "BG": "#FFFFFF",
+    "SURFACE": "#FFFFFF",
+    "SURFACE_VARIANT": "#E0E0E0",
+    "ON_SURFACE": "#000000",
+    "ON_SURFACE_VARIANT": "#1A1A1A",
+    "ERROR": "#7F0000",
+}
+
+_NORMAL_STATUS = {
+    "IN_PROGRESS": "#1565C0",   # antes #2196F3 (3,1:1 com texto branco)
+    "SUBMITTED": "#9C4A00",     # antes #FF9800 (2,2:1)
+    "APPROVED": "#256D2B",      # antes #4CAF50 (2,8:1)
+    "REJECTED": "#C62828",      # antes #F44336 (3,7:1)
+    "PENDING": "#616161",       # antes #9E9E9E (2,7:1)
     "DONE": "#256D2B",
 }
+_HIGH_CONTRAST_STATUS = {
+    "IN_PROGRESS": "#0D47A1",
+    "SUBMITTED": "#7A3300",
+    "APPROVED": "#1B5E20",
+    "REJECTED": "#7F0000",
+    "PENDING": "#333333",
+    "DONE": "#1B5E20",
+}
+
+_NORMAL_DEPT = {
+    "DELIVERY": "#C62828",
+    "CAIXA": "#9C4A00",
+    "HOSTESS": "#6A1B9A",
+    "BAR": "#006064",
+    "COZINHA_NOITE": "#A63A00",
+    "COZINHA_MANHA": "#765500",
+}
+_HIGH_CONTRAST_DEPT = {
+    "DELIVERY": "#7F0000",
+    "CAIXA": "#7A3300",
+    "HOSTESS": "#4A148C",
+    "BAR": "#004D56",
+    "COZINHA_NOITE": "#7A2200",
+    "COZINHA_MANHA": "#5C3A00",
+}
+
+def _palette_value(name):
+    # O contexto do Flet identifica a página inclusive nos eventos e tarefas
+    # assíncronas. Ler a preferência daqui evita mudar cores de outras sessões.
+    if name not in _NORMAL_PALETTE and name not in ("HIGH_CONTRAST", "STATUS_COLORS", "DEPT_COLORS"):
+        raise AttributeError(name)
+    try:
+        prefs = getattr(ft.context.page, "_a11y_state", None)
+    except RuntimeError:
+        prefs = None
+    high = bool(prefs and prefs.prefs.high_contrast)
+    if name == "HIGH_CONTRAST":
+        return high
+    if name == "STATUS_COLORS":
+        return MappingProxyType(_HIGH_CONTRAST_STATUS if high else _NORMAL_STATUS)
+    if name == "DEPT_COLORS":
+        return MappingProxyType(_HIGH_CONTRAST_DEPT if high else _NORMAL_DEPT)
+    return (_HIGH_CONTRAST_PALETTE if high else _NORMAL_PALETTE)[name]
+
+
+def __getattr__(name):
+    return _palette_value(name)
 
 STATUS_LABELS = {
     "IN_PROGRESS": "Em Andamento",
@@ -38,38 +108,30 @@ DEPT_ICONS = {
     "COZINHA_MANHA": ft.Icons.WB_SUNNY,
 }
 
-DEPT_COLORS = {
-    "DELIVERY": "#C62828",
-    "CAIXA": "#9C4300",
-    "HOSTESS": "#6A1B9A",
-    "BAR": "#006064",
-    "COZINHA_NOITE": "#A63A00",
-    "COZINHA_MANHA": "#765500",
-}
-
 
 def get_theme() -> ft.Theme:
     return ft.Theme(
-        color_scheme_seed=PRIMARY,
+        color_scheme_seed=_palette_value("PRIMARY"),
         color_scheme=ft.ColorScheme(
-            surface=SURFACE,
-            on_surface=ON_SURFACE,
-            on_surface_variant=ON_SURFACE_VARIANT,
+            surface=_palette_value("SURFACE"),
+            on_surface=_palette_value("ON_SURFACE"),
+            on_surface_variant=_palette_value("ON_SURFACE_VARIANT"),
             outline="#707070",
-            primary=PRIMARY,
+            primary=_palette_value("PRIMARY"),
             on_primary=ft.Colors.WHITE,
-            secondary=SECONDARY,
-            error=ERROR,
+            secondary=_palette_value("SECONDARY"),
+            error=_palette_value("ERROR"),
         ),
         visual_density=ft.VisualDensity.COMFORTABLE,
     )
 
 
 def status_chip(status: str) -> ft.Container:
-    color = STATUS_COLORS.get(status, "#616161")
+    colors = _palette_value("STATUS_COLORS")
+    color = colors.get(status, colors["PENDING"])
     label = STATUS_LABELS.get(status, status)
     return ft.Container(
-        content=ft.Text(label, size=13, weight=ft.FontWeight.W_600, color=ft.Colors.WHITE),
+        content=ft.Text(label, size=12, weight=ft.FontWeight.W_600, color=ft.Colors.WHITE),
         bgcolor=color,
         border_radius=12,
         padding=ft.Padding.symmetric(horizontal=10, vertical=4),
@@ -77,14 +139,25 @@ def status_chip(status: str) -> ft.Container:
 
 
 def show_snack(page: ft.Page, message: str, bgcolor: str = "#323232"):
-    page.show_dialog(ft.SnackBar(ft.Text(message, color=ft.Colors.WHITE), bgcolor=bgcolor))
+    # SnackBar é anunciado automaticamente por leitores de tela.
+    # Duração maior (8 s) dá tempo de leitura (WCAG 2.2.1).
+    page.show_dialog(
+        ft.SnackBar(
+            ft.Text(message, color=ft.Colors.WHITE),
+            bgcolor=bgcolor,
+            duration=8000,
+            show_close_icon=True,
+            close_icon_color=ft.Colors.WHITE,
+        )
+    )
 
 
 def card(content: ft.Control, padding: int = 16, margin: int = 8) -> ft.Container:
     return ft.Container(
         content=content,
-        bgcolor=SURFACE,
+        bgcolor=_palette_value("SURFACE"),
         border_radius=16,
+        border=ft.Border.all(2, _palette_value("ON_SURFACE")) if _palette_value("HIGH_CONTRAST") else None,
         padding=padding,
         margin=ft.Margin.symmetric(horizontal=margin, vertical=4),
         shadow=ft.BoxShadow(
@@ -96,17 +169,24 @@ def card(content: ft.Control, padding: int = 16, margin: int = 8) -> ft.Containe
 
 
 def section_header(title: str, subtitle: str | None = None) -> ft.Column:
-    controls = [ft.Text(title, size=20, weight=ft.FontWeight.BOLD, color=ON_SURFACE)]
+    controls = [ft.Text(title, size=20, weight=ft.FontWeight.BOLD, color=_palette_value("ON_SURFACE"))]
     if subtitle:
-        controls.append(ft.Text(subtitle, size=13, color=ON_SURFACE_VARIANT))
+        controls.append(ft.Text(subtitle, size=13, color=_palette_value("ON_SURFACE_VARIANT")))
     return ft.Column(controls=controls, spacing=2)
 
 
 def loading_indicator(message: str = "Carregando...") -> ft.Column:
     return ft.Column(
         controls=[
-            ft.ProgressRing(color=PRIMARY, width=40, height=40),
-            ft.Text(message, color=ON_SURFACE_VARIANT, size=14),
+            ft.ProgressRing(
+                color=_palette_value("PRIMARY"), width=40, height=40,
+                semantics_label=message,
+            ),
+            ft.Semantics(
+                live_region=True,
+                label=message,
+                content=ft.Text(message, color=_palette_value("ON_SURFACE_VARIANT"), size=14),
+            ),
         ],
         horizontal_alignment=ft.CrossAxisAlignment.CENTER,
         alignment=ft.MainAxisAlignment.CENTER,
@@ -134,23 +214,23 @@ def show_edit_profile_dialog(page, api, state, on_success=None):
 
     avatar_container = ft.Container(
         width=72, height=72, border_radius=36,
-        bgcolor=PRIMARY,
+        bgcolor=_palette_value("PRIMARY"),
         content=_avatar_content(),
         alignment=ft.Alignment.CENTER,
         clip_behavior=ft.ClipBehavior.ANTI_ALIAS,
     )
-    photo_status = ft.Text("", size=11, color=STATUS_COLORS["APPROVED"], visible=False)
+    photo_status = ft.Text("", size=12, color=_palette_value("STATUS_COLORS")["APPROVED"], visible=False)
 
-    async def _handle_avatar_pick(e):
-        if not e.files:
+    async def _handle_avatar_pick(files):
+        if not files:
             return
-        f = e.files[0]
+        f = files[0]
         fp = f.path
         tmp_path = None
         if not fp:
             data = getattr(f, "bytes", None)
             if not data:
-                show_snack(page, "Arquivo indisponível neste modo", ERROR)
+                show_snack(page, "Não foi possível abrir esse arquivo. Tente outro.", _palette_value("ERROR"))
                 return
             ext = os.path.splitext(f.name or "")[1].lower() or ".jpg"
             with tempfile.NamedTemporaryFile(delete=False, suffix=ext) as tmp:
@@ -164,11 +244,11 @@ def show_edit_profile_dialog(page, api, state, on_success=None):
                 state.user["avatar_url"] = new_url
             avatar_url_ref[0] = new_url
             avatar_container.content = _avatar_content()
-            photo_status.value = "Foto atualizada!"
+            photo_status.value = "Foto atualizada."
             photo_status.visible = True
             page.update()
         except Exception as ex:
-            show_snack(page, getattr(ex, "detail", "Erro ao enviar foto"), ERROR)
+            show_snack(page, getattr(ex, "detail", "Não foi possível enviar a foto. Tente de novo."), _palette_value("ERROR"))
         finally:
             if tmp_path:
                 try:
@@ -190,7 +270,7 @@ def show_edit_profile_dialog(page, api, state, on_success=None):
         label="E-mail", value=current_email, expand=True,
         keyboard_type=ft.KeyboardType.EMAIL,
     )
-    err = ft.Text("", color=ERROR, size=12, visible=False)
+    err = ft.Text("", color=_palette_value("ERROR"), size=12, visible=False)
     saving = [False]
 
     async def do_save(e):
@@ -200,12 +280,12 @@ def show_edit_profile_dialog(page, api, state, on_success=None):
         name = (name_field.value or "").strip()
         email = (email_field.value or "").strip().lower()
         if len(name) < 2:
-            err.value = "Nome deve ter ao menos 2 caracteres"
+            err.value = "Digite um nome com pelo menos 2 letras."
             err.visible = True
             page.update()
             return
         if not email or "@" not in email:
-            err.value = "E-mail inválido"
+            err.value = "Digite um e-mail válido. Exemplo: nome@empresa.com"
             err.visible = True
             page.update()
             return
@@ -218,7 +298,7 @@ def show_edit_profile_dialog(page, api, state, on_success=None):
                 state.user["email"] = result.get("email", email)
             dlg.open = False
             page.update()
-            show_snack(page, "Perfil atualizado!", STATUS_COLORS["APPROVED"])
+            show_snack(page, "Perfil atualizado.", _palette_value("STATUS_COLORS")["APPROVED"])
             if on_success:
                 on_success(result)
         except Exception as ex:
@@ -275,7 +355,7 @@ def show_password_change_dialog(page, api):
     current_pw = ft.TextField(label="Senha atual", password=True, can_reveal_password=True, expand=True)
     new_pw = ft.TextField(label="Nova senha", password=True, can_reveal_password=True, expand=True)
     confirm_pw = ft.TextField(label="Confirmar nova senha", password=True, can_reveal_password=True, expand=True)
-    err = ft.Text("", color=ERROR, size=12, visible=False)
+    err = ft.Text("", color=_palette_value("ERROR"), size=12, visible=False)
     saving = [False]
 
     async def do_save(e):
@@ -283,7 +363,7 @@ def show_password_change_dialog(page, api):
             return
         err.visible = False
         if not current_pw.value:
-            err.value = "Informe a senha atual"
+            err.value = "Digite a sua senha atual."
             err.visible = True
             page.update()
             return
@@ -293,7 +373,7 @@ def show_password_change_dialog(page, api):
             page.update()
             return
         if new_pw.value != confirm_pw.value:
-            err.value = "As senhas não coincidem"
+            err.value = "As duas senhas estão diferentes. Digite a mesma senha nos dois campos."
             err.visible = True
             page.update()
             return
@@ -302,7 +382,7 @@ def show_password_change_dialog(page, api):
             await api.change_password(current_pw.value, new_pw.value)
             dlg.open = False
             page.update()
-            show_snack(page, "Senha alterada com sucesso!", STATUS_COLORS["APPROVED"])
+            show_snack(page, "Senha alterada.", _palette_value("STATUS_COLORS")["APPROVED"])
         except Exception as ex:
             detail = getattr(ex, "detail", str(ex))
             err.value = detail
@@ -342,6 +422,7 @@ def show_photo_dialog(page: ft.Page, url: str, description: str = "Foto de evid�
             ft.TextButton(
                 "Fechar",
                 on_click=close,
+                autofocus=True,
                 style=ft.ButtonStyle(color=ft.Colors.WHITE),
             )
         ],
@@ -412,12 +493,15 @@ def fmt_date_label(date_str: str) -> str:
 
 def error_view(message: str, on_retry=None) -> ft.Column:
     controls = [
-        ft.Icon(ft.Icons.ERROR_OUTLINE, color=ERROR, size=48),
-        ft.Text(message, color=ON_SURFACE_VARIANT, size=14, text_align=ft.TextAlign.CENTER),
+        ft.Icon(ft.Icons.ERROR_OUTLINE, color=_palette_value("ERROR"), size=48, semantics_label="Erro"),
+        ft.Semantics(
+            live_region=True,
+            content=ft.Text(message, color=_palette_value("ON_SURFACE_VARIANT"), size=14, text_align=ft.TextAlign.CENTER),
+        ),
     ]
     if on_retry:
         controls.append(
-            ft.FilledButton("Tentar novamente", icon=ft.Icons.REFRESH, on_click=on_retry, style=ft.ButtonStyle(bgcolor=PRIMARY))
+            ft.FilledButton("Tentar novamente", icon=ft.Icons.REFRESH, on_click=on_retry, style=ft.ButtonStyle(bgcolor=_palette_value("PRIMARY"), color=ft.Colors.WHITE))
         )
     return ft.Column(
         controls=controls,
