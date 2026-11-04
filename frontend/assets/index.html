@@ -142,6 +142,38 @@
       <div class="vw-plugin-top-wrapper"></div>
     </div>
   </div>
+  <script>
+    // O player oficial não envia COEP. No Chromium, um quadro sem credenciais
+    // pode carregá-lo mantendo o isolamento da página Flet.
+    if ("credentialless" in HTMLIFrameElement.prototype) {
+      const hostObserver = new MutationObserver(observePlayer);
+      hostObserver.observe(document.body, { childList: true });
+
+      function observePlayer() {
+        const root = document.getElementById("vlibras-app-root")?.shadowRoot;
+        if (!root) return;
+        hostObserver.disconnect();
+
+        function isolateFrame() {
+          const frame = root.querySelector("iframe[title='vlibras-player']");
+          if (!frame || frame.hasAttribute("credentialless")) return;
+          const source = frame.getAttribute("src");
+          if (!source) return;
+          const url = new URL(source, document.baseURI);
+          if (url.origin !== "https://vlibras.gov.br" ||
+              url.pathname !== "/app/unity/index.html") return;
+          frame.setAttribute("credentialless", "");
+          frame.src = url.href;
+        }
+
+        const playerObserver = new MutationObserver(isolateFrame);
+        playerObserver.observe(root, {
+          childList: true, subtree: true, attributes: true, attributeFilter: ["src"]
+        });
+        isolateFrame();
+      }
+    }
+  </script>
   <script src="https://vlibras.gov.br/app/vlibras-plugin.js" crossorigin="anonymous" async
     onload="try { new window.VLibras.Widget('https://vlibras.gov.br/app'); } catch (e) { var b = document.getElementById('vlibras-box'); if (b) b.hidden = true; }"
     onerror="var b = document.getElementById('vlibras-box'); if (b) b.hidden = true;"></script>
