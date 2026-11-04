@@ -6,6 +6,8 @@ import json as _json
 
 sys.path.insert(0, os.path.dirname(__file__))
 
+from app import a11y
+from app.pages.accessibility_page import build_accessibility_view
 from app.accessibility import configure_accessibility
 from app.state import AppState
 from app.theme import get_theme
@@ -64,7 +66,14 @@ async def main(page: ft.Page):
     state = AppState()
     state.storage = ft.SharedPreferences()
     page.services.append(state.storage)
+    a11y.attach_storage(page, state.storage)
+    a11y.install_keyboard_shortcuts(page)
+    page.locale_configuration = ft.LocaleConfiguration(
+        supported_locales=[ft.Locale("pt", "BR")],
+        current_locale=ft.Locale("pt", "BR"),
+    )
     page.update()
+    await a11y.load_prefs(page)
     page.title = "Pizzaria Check-In"
     page.theme_mode = ft.ThemeMode.LIGHT
     page.theme = get_theme()
@@ -210,6 +219,12 @@ async def main(page: ft.Page):
             )
             page.views.append(build_terms_view(page, back, show_tab=tab))
 
+        elif route == "/acessibilidade":
+            back = "/login" if not state.is_authenticated else (
+                "/manager" if state.is_manager else "/employee"
+            )
+            page.views.append(build_accessibility_view(page, back))
+
         else:
             asyncio.create_task(page.push_route("/login"))
             return
@@ -217,15 +232,20 @@ async def main(page: ft.Page):
         page.update()
 
     def view_pop(e: ft.ViewPopEvent):
+        if len(page.views) < 2:
+            return
         page.views.pop()
         top = page.views[-1]
         asyncio.create_task(page.push_route(top.route))
 
+    a11y.set_rebuild_callback(page, lambda: route_change(None))
     page.on_route_change = route_change
     page.on_view_pop = view_pop
 
     # Render the initial view explicitly: pushing an unchanged URL emits no route event.
-    if state.is_authenticated:
+    if page.route == "/acessibilidade" or (page.route or "").startswith("/terms"):
+        route_change(None)
+    elif state.is_authenticated:
         page.views.append(_build_splash_view())
         page.update()
         asyncio.create_task(_validate_and_route())
@@ -237,11 +257,12 @@ async def main(page: ft.Page):
 
 
 if __name__ == "__main__":
-    import os
-    web_mode = os.getenv("WEB_MODE", "0") == "1"
+    on_render = os.getenv("RENDER") == "true"
+    web_mode = on_render or os.getenv("WEB_MODE") == "1"
     ft.run(
         main,
         assets_dir="assets",
         view=ft.AppView.WEB_BROWSER if web_mode else ft.AppView.FLET_APP,
-        port=int(os.getenv("WEB_PORT", "8082")) if web_mode else 0,
+        port=int(os.getenv("PORT", os.getenv("WEB_PORT", "8082"))) if web_mode else 0,
+        host="0.0.0.0" if web_mode else None,
     )
