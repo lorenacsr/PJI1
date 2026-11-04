@@ -108,13 +108,15 @@ def set_rebuild_callback(page: ft.Page, fn) -> None:
     _sess(page).rebuild = fn
 
 
-def change_font(page: ft.Page, delta: int | None) -> None:
+def change_font(page: ft.Page, delta: int | None, *, refresh_labels=None) -> None:
     """delta=+1 aumenta, -1 diminui, None volta ao normal."""
     prefs = _sess(page).prefs
     if delta is None:
         prefs.font_index = 0
     else:
         prefs.font_index = max(0, min(prefs.font_index + delta, len(FONT_SCALES) - 1))
+    if refresh_labels is not None:
+        refresh_labels()
     page.update()
     asyncio.create_task(_save_prefs(page))
 
@@ -151,14 +153,10 @@ def show_panel(page: ft.Page, state=None) -> None:
         plus.disabled = prefs.font_index == len(FONT_SCALES) - 1
 
     def on_minus(e):
-        change_font(page, -1)
-        refresh_labels()
-        page.update()
+        change_font(page, -1, refresh_labels=refresh_labels)
 
     def on_plus(e):
-        change_font(page, +1)
-        refresh_labels()
-        page.update()
+        change_font(page, +1, refresh_labels=refresh_labels)
 
     minus = ft.OutlinedButton(
         "A−", tooltip="Diminuir o texto", on_click=on_minus,
@@ -189,16 +187,13 @@ def show_panel(page: ft.Page, state=None) -> None:
     )
 
     def on_reset(e):
-        was_contrast = prefs.high_contrast
-        prefs.font_index = 0
-        if was_contrast:
+        if prefs.high_contrast:
+            prefs.font_index = 0
             close(None)
             set_contrast(page, False)
             show_panel(page, state)
             return
-        refresh_labels()
-        asyncio.create_task(_save_prefs(page))
-        page.update()
+        change_font(page, None, refresh_labels=refresh_labels)
 
     def open_statement(e):
         close(None)
