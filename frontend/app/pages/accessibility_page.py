@@ -68,15 +68,6 @@ _SECTIONS: list[tuple[str, list[str]]] = [
             "• Erros dizem o que aconteceu e como resolver.",
         ],
     ),
-    (
-        "O que ainda não está perfeito",
-        [
-            "• O VLibras pode errar em palavras técnicas.",
-            "• O app web é feito com Flutter. Alguns leitores de tela podem "
-            "ler certas telas de forma diferente. Os melhores resultados "
-            "são com NVDA ou JAWS no Chrome ou Edge, e TalkBack no Android.",
-        ],
-    ),
 ]
 
 
