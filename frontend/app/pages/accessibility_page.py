@@ -77,14 +77,6 @@ _SECTIONS: list[tuple[str, list[str]]] = [
             "são com NVDA ou JAWS no Chrome ou Edge, e TalkBack no Android.",
         ],
     ),
-    (
-        "Encontrou um problema?",
-        [
-            "Fale com o administrador do seu estabelecimento. Diga qual tela, "
-            "o que aconteceu e qual leitor de tela ou navegador você usa. "
-            "Vamos responder e corrigir o mais rápido possível.",
-        ],
-    ),
 ]
 
 
