@@ -175,7 +175,7 @@ def build_manager_view(page: ft.Page, state: AppState) -> ft.View:
                     padding=ft.Padding.symmetric(vertical=6, horizontal=2),
                     content=ft.Column(
                         [
-                            ft.Text(day_label, size=10, color=ft.Colors.WHITE if total > 0 else th.ON_SURFACE_VARIANT,
+                            ft.Text(day_label, size=12, color=ft.Colors.WHITE if total > 0 else th.ON_SURFACE_VARIANT,
                                     weight=ft.FontWeight.W_600, text_align=ft.TextAlign.CENTER),
                             ft.Text(count_text, size=12, color=ft.Colors.WHITE if total > 0 else th.ON_SURFACE_VARIANT,
                                     weight=ft.FontWeight.BOLD, text_align=ft.TextAlign.CENTER),
@@ -189,7 +189,7 @@ def build_manager_view(page: ft.Page, state: AppState) -> ft.View:
             padding=ft.Padding.symmetric(horizontal=12, vertical=8),
             content=ft.Column(
                 [
-                    ft.Text("Última semana", size=11, color=th.ON_SURFACE_VARIANT, weight=ft.FontWeight.W_600),
+                    ft.Text("Última semana", size=12, color=th.ON_SURFACE_VARIANT, weight=ft.FontWeight.W_600),
                     ft.Row(cells, spacing=4),
                 ],
                 spacing=4,
@@ -295,7 +295,7 @@ def build_manager_view(page: ft.Page, state: AppState) -> ft.View:
                                     ft.ListTile(
                                         leading=leading,
                                         title=ft.Text(emp.get("name", "—"), size=13),
-                                        subtitle=ft.Text(emp.get("department_name", "—"), size=11),
+                                        subtitle=ft.Text(emp.get("department_name", "—"), size=12),
                                         dense=True,
                                         content_padding=ft.Padding.symmetric(horizontal=0, vertical=2),
                                     )
@@ -936,7 +936,7 @@ def build_manager_view(page: ft.Page, state: AppState) -> ft.View:
                 ft.Row(
                     [
                         ft.Icon(ft.Icons.PHOTO_CAMERA, size=11, color=pr_color),
-                        ft.Text(f"{photo_rate:.0f}% com foto", size=10, color=pr_color),
+                        ft.Text(f"{photo_rate:.0f}% com foto", size=12, color=pr_color),
                     ],
                     spacing=3,
                 )
@@ -956,12 +956,12 @@ def build_manager_view(page: ft.Page, state: AppState) -> ft.View:
                                     ft.Row(
                                         [
                                             ft.Container(
-                                                content=ft.Text(phase_label, size=9, color=ft.Colors.WHITE,
+                                                content=ft.Text(phase_label, size=12, color=ft.Colors.WHITE,
                                                                 weight=ft.FontWeight.W_600),
                                                 bgcolor=phase_color, border_radius=4,
                                                 padding=ft.Padding.symmetric(horizontal=5, vertical=2),
                                             ),
-                                            ft.Text(dept, size=11, color=th.ON_SURFACE_VARIANT),
+                                            ft.Text(dept, size=12, color=th.ON_SURFACE_VARIANT),
                                         ],
                                         spacing=6,
                                     ),
@@ -972,7 +972,7 @@ def build_manager_view(page: ft.Page, state: AppState) -> ft.View:
                                 [
                                     ft.Text(f"{rate:.0f}%", size=16, weight=ft.FontWeight.BOLD, color=bar_color,
                                             text_align=ft.TextAlign.RIGHT),
-                                    ft.Text(f"{done}/{total}", size=10, color=th.ON_SURFACE_VARIANT,
+                                    ft.Text(f"{done}/{total}", size=12, color=th.ON_SURFACE_VARIANT,
                                             text_align=ft.TextAlign.RIGHT),
                                 ],
                                 spacing=2, horizontal_alignment=ft.CrossAxisAlignment.END,
@@ -1064,7 +1064,7 @@ def build_manager_view(page: ft.Page, state: AppState) -> ft.View:
                                             ft.Icon(dept_icon, size=14, color=d_color),
                                             ft.Text(dept.get("department_name", "—"), size=12, expand=True),
                                             ft.Text(f"{d_rate}%", size=14, weight=ft.FontWeight.BOLD, color=d_color),
-                                            ft.Text(f"{d_approved}/{d_total}", size=10, color=th.ON_SURFACE_VARIANT),
+                                            ft.Text(f"{d_approved}/{d_total}", size=12, color=th.ON_SURFACE_VARIANT),
                                         ],
                                         spacing=6,
                                         vertical_alignment=ft.CrossAxisAlignment.CENTER,
@@ -1335,14 +1335,14 @@ def _build_dept_stats_section(dept_stats: list) -> ft.Container:
                                 bgcolor=ft.Colors.with_opacity(0.15, color),
                                 content=ft.Text(
                                     short_name[:2].upper(),
-                                    size=11, weight=ft.FontWeight.BOLD, color=color,
+                                    size=12, weight=ft.FontWeight.BOLD, color=color,
                                     text_align=ft.TextAlign.CENTER,
                                 ),
                                 alignment=ft.Alignment.CENTER,
                             ),
                             ft.Text(
                                 short_name,
-                                size=11, weight=ft.FontWeight.W_600,
+                                size=12, weight=ft.FontWeight.W_600,
                                 expand=True, max_lines=1,
                                 overflow=ft.TextOverflow.ELLIPSIS,
                                 color=th.ON_SURFACE,
@@ -1361,13 +1361,13 @@ def _build_dept_stats_section(dept_stats: list) -> ft.Container:
                     ft.Row(
                         [
                             ft.Text(f"{pct}%", size=13, weight=ft.FontWeight.BOLD, color=pct_color),
-                            ft.Text(f"{approved}/{total}", size=10, color=th.ON_SURFACE_VARIANT),
+                            ft.Text(f"{approved}/{total}", size=12, color=th.ON_SURFACE_VARIANT),
                         ],
                         alignment=ft.MainAxisAlignment.SPACE_BETWEEN,
                     ),
                     ft.Text(
                         f"{rejected} reprovado{'s' if rejected != 1 else ''}",
-                        size=10,
+                        size=12,
                         color=th.STATUS_COLORS["REJECTED"] if rejected else th.ON_SURFACE_VARIANT,
                         visible=total > 0,
                     ),
@@ -1383,7 +1383,7 @@ def _build_dept_stats_section(dept_stats: list) -> ft.Container:
                 ft.Row(
                     [
                         ft.Text("Por Departamento", size=13, weight=ft.FontWeight.W_600, color=th.ON_SURFACE),
-                        ft.Text("· 30 dias", size=11, color=th.ON_SURFACE_VARIANT),
+                        ft.Text("· 30 dias", size=12, color=th.ON_SURFACE_VARIANT),
                     ],
                     spacing=4,
                     vertical_alignment=ft.CrossAxisAlignment.CENTER,
@@ -1409,7 +1409,7 @@ def _build_stats_row(stats: dict) -> ft.Container:
                 [
                     ft.Icon(icon, color=color, size=20),
                     ft.Text(str(value), size=20, weight=ft.FontWeight.BOLD, color=color),
-                    ft.Text(label, size=10, color=th.ON_SURFACE_VARIANT, text_align=ft.TextAlign.CENTER),
+                    ft.Text(label, size=12, color=th.ON_SURFACE_VARIANT, text_align=ft.TextAlign.CENTER),
                 ],
                 horizontal_alignment=ft.CrossAxisAlignment.CENTER,
                 spacing=3,
@@ -1504,7 +1504,7 @@ def _build_review_card(page: ft.Page, c: dict, media_base: str = "", api=None, o
                         ft.Column(
                             [
                                 th.status_chip("SUBMITTED"),
-                                ft.Text(submitted_rel, size=10, color=urgency_color, italic=True,
+                                ft.Text(submitted_rel, size=12, color=urgency_color, italic=True,
                                         weight=ft.FontWeight.W_500 if urgency_color != th.ON_SURFACE_VARIANT else ft.FontWeight.NORMAL),
                             ],
                             horizontal_alignment=ft.CrossAxisAlignment.END,
@@ -1602,7 +1602,7 @@ def _build_all_card(page: ft.Page, c: dict) -> ft.Container:
                     ft.Icon(ft.Icons.CHAT_BUBBLE_OUTLINE, size=12, color=th.ON_SURFACE_VARIANT),
                     ft.Text(
                         submission_notes[:70] + ("…" if len(submission_notes) > 70 else ""),
-                        size=11, color=th.ON_SURFACE_VARIANT, italic=True, expand=True,
+                        size=12, color=th.ON_SURFACE_VARIANT, italic=True, expand=True,
                     ),
                 ],
                 spacing=5,
@@ -1616,7 +1616,7 @@ def _build_all_card(page: ft.Page, c: dict) -> ft.Container:
                 ft.Column(
                     [
                         th.status_chip(status),
-                        ft.IconButton(ft.Icons.CHEVRON_RIGHT, icon_color=th.ON_SURFACE_VARIANT, on_click=lambda e, cid=cid: asyncio.create_task(page.push_route(f"/review/{cid}"))),
+                        ft.IconButton(ft.Icons.CHEVRON_RIGHT, icon_color=th.ON_SURFACE_VARIANT, tooltip="Revisar checklist", on_click=lambda e, cid=cid: asyncio.create_task(page.push_route(f"/review/{cid}"))),
                     ],
                     alignment=ft.MainAxisAlignment.CENTER,
                     horizontal_alignment=ft.CrossAxisAlignment.END, spacing=2,
@@ -1634,7 +1634,7 @@ def _build_user_stats_line(stats: dict | None) -> ft.Column:
         if last_active:
             label = f"Sem atividade recente · última: {th.fmt_date(last_active)}"
         return ft.Column(
-            [ft.Text(label, size=10, color=th.ON_SURFACE_VARIANT, italic=True)],
+            [ft.Text(label, size=12, color=th.ON_SURFACE_VARIANT, italic=True)],
             spacing=2,
         )
     total = stats["total"]
@@ -1646,10 +1646,10 @@ def _build_user_stats_line(stats: dict | None) -> ft.Column:
     controls: list = [
         ft.Row(
             [
-                ft.Text(f"{total} checklists", size=10, color=th.ON_SURFACE_VARIANT),
+                ft.Text(f"{total} checklists", size=12, color=th.ON_SURFACE_VARIANT),
                 ft.Container(width=1, height=10, bgcolor=th.SURFACE_VARIANT),
-                ft.Text(f"{pct}% aprovados", size=10, color=pct_color, weight=ft.FontWeight.W_500),
-                ft.Text(f"· {rejected} reprov.", size=10, color=th.STATUS_COLORS["REJECTED"], visible=rejected > 0),
+                ft.Text(f"{pct}% aprovados", size=12, color=pct_color, weight=ft.FontWeight.W_500),
+                ft.Text(f"· {rejected} reprov.", size=12, color=th.STATUS_COLORS["REJECTED"], visible=rejected > 0),
             ],
             spacing=6,
             vertical_alignment=ft.CrossAxisAlignment.CENTER,
@@ -1657,7 +1657,7 @@ def _build_user_stats_line(stats: dict | None) -> ft.Column:
     ]
     if last_active:
         controls.append(
-            ft.Text(f"Última atividade: {th.fmt_date_label(last_active)}", size=10, color=th.ON_SURFACE_VARIANT, italic=True)
+            ft.Text(f"Última atividade: {th.fmt_date_label(last_active)}", size=12, color=th.ON_SURFACE_VARIANT, italic=True)
         )
     return ft.Column(controls, spacing=2)
 
@@ -1802,7 +1802,7 @@ def _build_user_card(u: dict, page: ft.Page, api, reload_fn, stats: dict | None 
                                             ft.Text(tmpl_name, size=13, weight=ft.FontWeight.W_500, max_lines=1, overflow=ft.TextOverflow.ELLIPSIS),
                                             ft.Row(
                                                 [
-                                                    ft.Text(date_str, size=11, color=th.ON_SURFACE_VARIANT),
+                                                    ft.Text(date_str, size=12, color=th.ON_SURFACE_VARIANT),
                                                     th.status_chip(status),
                                                 ],
                                                 spacing=8,
@@ -1815,6 +1815,7 @@ def _build_user_card(u: dict, page: ft.Page, api, reload_fn, stats: dict | None 
                                         ft.Icons.CHEVRON_RIGHT,
                                         icon_color=th.ON_SURFACE_VARIANT,
                                         icon_size=18,
+                                        tooltip="Revisar checklist",
                                         on_click=lambda e, cid=cid: (setattr(hist_dlg, "open", False), page.update(), asyncio.create_task(page.push_route(f"/review/{cid}"))),
                                     ),
                                 ],
