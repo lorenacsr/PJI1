@@ -21,7 +21,9 @@ jobs:
       - run: python -m pytest tests/test_api_workflow.py tests/test_security_contracts.py -q
         env:
           PYTHONPATH: backend
-      - run: python -m unittest discover -s tests -p test_session_isolation.py -v
+      - run: python -m pytest tests/test_session_isolation.py tests/test_accessibility.py -q
+        env:
+          PYTHONPATH: frontend
       - run: python tests/check_frontend_controls.py
         env:
           PYTHONPATH: frontend
