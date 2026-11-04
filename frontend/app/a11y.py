@@ -65,7 +65,8 @@ class _Session:
         self.prefs = Prefs()
         self.storage: ft.SharedPreferences | None = None
         self.rebuild = None        # reconstrói as telas (definida em main.py)
-        self.panel_open = False
+        self.panel: ft.AlertDialog | None = None
+        self.refresh_font_labels = None
 
 
 def _sess(page: ft.Page) -> _Session:
@@ -108,15 +109,16 @@ def set_rebuild_callback(page: ft.Page, fn) -> None:
     _sess(page).rebuild = fn
 
 
-def change_font(page: ft.Page, delta: int | None, *, refresh_labels=None) -> None:
+def change_font(page: ft.Page, delta: int | None) -> None:
     """delta=+1 aumenta, -1 diminui, None volta ao normal."""
-    prefs = _sess(page).prefs
+    session = _sess(page)
+    prefs = session.prefs
     if delta is None:
         prefs.font_index = 0
     else:
         prefs.font_index = max(0, min(prefs.font_index + delta, len(FONT_SCALES) - 1))
-    if refresh_labels is not None:
-        refresh_labels()
+    if session.refresh_font_labels is not None:
+        session.refresh_font_labels()
     page.update()
     asyncio.create_task(_save_prefs(page))
 
@@ -125,17 +127,20 @@ def set_contrast(page: ft.Page, enabled: bool) -> None:
     s = _sess(page)
     s.prefs.high_contrast = enabled
     page.theme = th.get_theme()
+    if s.panel is not None:
+        show_panel(page, refresh=True)
     if s.rebuild:
         s.rebuild()
+    else:
+        page.update()
     asyncio.create_task(_save_prefs(page))
 
 
 # ── Painel "Acessibilidade" ───────────────────────────────────────────────
-def show_panel(page: ft.Page, state=None) -> None:
+def show_panel(page: ft.Page, state=None, *, refresh=False) -> None:
     sess = _sess(page)
-    if sess.panel_open:
+    if sess.panel is not None and not refresh:
         return
-    sess.panel_open = True
     prefs = sess.prefs
 
     size_label = ft.Text(weight=ft.FontWeight.W_600, color=th.ON_SURFACE)
@@ -153,10 +158,10 @@ def show_panel(page: ft.Page, state=None) -> None:
         plus.disabled = prefs.font_index == len(FONT_SCALES) - 1
 
     def on_minus(e):
-        change_font(page, -1, refresh_labels=refresh_labels)
+        change_font(page, -1)
 
     def on_plus(e):
-        change_font(page, +1, refresh_labels=refresh_labels)
+        change_font(page, +1)
 
     minus = ft.OutlinedButton(
         "A−", tooltip="Diminuir o texto", on_click=on_minus,
@@ -168,10 +173,7 @@ def show_panel(page: ft.Page, state=None) -> None:
     )
 
     def on_contrast(e):
-        # Fecha e reabre o painel para ele também receber as novas cores.
-        close(None)
         set_contrast(page, bool(e.control.value))
-        show_panel(page, state)
 
     contrast_switch = ft.Switch(
         label="Alto contraste",
@@ -189,11 +191,9 @@ def show_panel(page: ft.Page, state=None) -> None:
     def on_reset(e):
         if prefs.high_contrast:
             prefs.font_index = 0
-            close(None)
             set_contrast(page, False)
-            show_panel(page, state)
             return
-        change_font(page, None, refresh_labels=refresh_labels)
+        change_font(page, None)
 
     def open_statement(e):
         close(None)
@@ -268,12 +268,17 @@ def show_panel(page: ft.Page, state=None) -> None:
         width=360,
     )
 
+    def clear_panel(e):
+        if sess.panel is dlg:
+            sess.panel = None
+            sess.refresh_font_labels = None
+
     def close(e):
-        sess.panel_open = False
+        clear_panel(e)
         dlg.open = False
         page.update()
 
-    dlg = ft.AlertDialog(
+    updated_dialog = ft.AlertDialog(
         modal=False,
         title=ft.Row(
             [
@@ -292,11 +297,22 @@ def show_panel(page: ft.Page, state=None) -> None:
         ],
         actions_alignment=ft.MainAxisAlignment.END,
         bgcolor=th.SURFACE,
-        on_dismiss=lambda e: setattr(sess, "panel_open", False),
+        on_dismiss=clear_panel,
     )
+    sess.refresh_font_labels = refresh_labels
     refresh_labels()
-    page.show_dialog(dlg)
-    page.update()
+    if sess.panel is None:
+        dlg = updated_dialog
+        sess.panel = dlg
+        page.show_dialog(dlg)
+        page.update()
+    else:
+        # Mantém o mesmo diálogo aberto enquanto troca sua paleta.
+        dlg = sess.panel
+        dlg.title = updated_dialog.title
+        dlg.content = updated_dialog.content
+        dlg.actions = updated_dialog.actions
+        dlg.bgcolor = updated_dialog.bgcolor
 
 
 # ── Botão e atalhos ───────────────────────────────────────────────────────
