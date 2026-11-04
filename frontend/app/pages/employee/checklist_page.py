@@ -52,15 +52,15 @@ def build_checklist_view(page: ft.Page, state: AppState, checklist_id: str) -> f
     _auto_prompted = [False]
     current_pick_id: list = [None]
 
-    async def _handle_pick_result(e):
+    async def _handle_pick_result(files):
         import os, tempfile
         _ALLOWED_EXTS = {".jpg", ".jpeg", ".png", ".webp"}
         _MAX_BYTES = 5 * 1024 * 1024
         iid = current_pick_id[0]
         current_pick_id[0] = None
-        if not e.files or not iid:
+        if not files or not iid:
             return
-        f = e.files[0]
+        f = files[0]
         ext = os.path.splitext(f.name or "")[1].lower()
         if ext and ext not in _ALLOWED_EXTS:
             th.show_snack(page, "Formato inválido. Use JPG, PNG ou WEBP.", th.ERROR)
@@ -70,7 +70,7 @@ def build_checklist_view(page: ft.Page, state: AppState, checklist_id: str) -> f
         if not fp:
             data = getattr(f, "bytes", None)
             if not data:
-                th.show_snack(page, "Arquivo indisponível neste modo", th.ERROR)
+                th.show_snack(page, "Não foi possível abrir esse arquivo. Tente outro.", th.ERROR)
                 return
             if len(data) > _MAX_BYTES:
                 th.show_snack(page, "Arquivo muito grande. Máximo 5 MB.", th.ERROR)
@@ -116,15 +116,15 @@ def build_checklist_view(page: ft.Page, state: AppState, checklist_id: str) -> f
         if status == "SUBMITTED":
             submitted_at = _fmt_dt(data.get("submitted_at", ""))
             review_banner.visible = True
-            review_banner.bgcolor = ft.Colors.with_opacity(0.08, "#1565C0")
+            review_banner.bgcolor = ft.Colors.with_opacity(0.08, th.STATUS_COLORS["IN_PROGRESS"])
             review_banner.padding = ft.Padding.symmetric(horizontal=16, vertical=10)
             review_banner.content = ft.Row(
                 [
-                    ft.Icon(ft.Icons.HOURGLASS_BOTTOM, color="#1565C0", size=18),
+                    ft.Icon(ft.Icons.HOURGLASS_BOTTOM, color=th.STATUS_COLORS["IN_PROGRESS"], size=18),
                     ft.Column(
                         [
-                            ft.Text("Aguardando revisão do gestor", size=13, color="#1565C0", weight=ft.FontWeight.W_500),
-                            ft.Text(f"Enviado {submitted_at}", size=11, color="#1565C0", visible=bool(submitted_at)),
+                            ft.Text("Aguardando revisão do gestor", size=13, color=th.STATUS_COLORS["IN_PROGRESS"], weight=ft.FontWeight.W_500),
+                            ft.Text(f"Enviado {submitted_at}", size=12, color=th.STATUS_COLORS["IN_PROGRESS"], visible=bool(submitted_at)),
                         ],
                         spacing=1, expand=True,
                     ),
@@ -418,12 +418,11 @@ def build_checklist_view(page: ft.Page, state: AppState, checklist_id: str) -> f
         async def pick_photo(e, iid=item_id):
             current_pick_id[0] = iid
             files = await file_picker.pick_files(
-                with_data=True,
                 file_type=ft.FilePickerFileType.IMAGE,
                 allow_multiple=False,
+                with_data=True,
             )
-            from types import SimpleNamespace
-            await _handle_pick_result(SimpleNamespace(files=files))
+            await _handle_pick_result(files)
 
         def open_note_dialog(e, iid=item_id, cur_status=status, cur_notes=existing_notes):
             note_field = ft.TextField(
@@ -471,7 +470,7 @@ def build_checklist_view(page: ft.Page, state: AppState, checklist_id: str) -> f
                             icon=check_icon,
                             icon_color=check_color,
                             icon_size=28,
-                            tooltip="Marcar como feito" if not is_done else "Desmarcar",
+                            tooltip=f"Marcar como feito: {title}" if not is_done else f"Item feito. Desmarcar: {title}",
                             on_click=lambda e, iid=item_id, done=is_done: asyncio.create_task(toggle_item(e, iid, done)) if is_editable else None,
                             disabled=not is_editable,
                         ),
@@ -484,7 +483,7 @@ def build_checklist_view(page: ft.Page, state: AppState, checklist_id: str) -> f
                             icon=ft.Icons.EDIT_NOTE if not existing_notes else ft.Icons.SPEAKER_NOTES,
                             icon_color=note_icon_color,
                             icon_size=20,
-                            tooltip="Adicionar observação" if not existing_notes else "Editar observação",
+                            tooltip=f"Adicionar observação ao item: {title}" if not existing_notes else f"Editar observação do item: {title}",
                             on_click=open_note_dialog if is_editable else None,
                             disabled=not is_editable,
                         ),
@@ -492,8 +491,9 @@ def build_checklist_view(page: ft.Page, state: AppState, checklist_id: str) -> f
                             icon=ft.Icons.PHOTO_CAMERA_OUTLINED if not photo_url else ft.Icons.PHOTO_CAMERA,
                             icon_color=photo_icon_color,
                             icon_size=22,
-                            tooltip="Tirar/enviar foto",
-                            on_click=lambda e, iid=item_id: pick_photo(e, iid) if is_editable else None,
+                            tooltip=(f"Trocar a foto do item: {title}" if photo_url
+                                     else f"Tirar ou enviar foto do item: {title}"),
+                            on_click=lambda e, iid=item_id: asyncio.create_task(pick_photo(e, iid)) if is_editable else None,
                             disabled=not is_editable,
                         ),
                     ],
@@ -527,12 +527,16 @@ def build_checklist_view(page: ft.Page, state: AppState, checklist_id: str) -> f
             full_url = f"{state.media_base}{photo_url}"
             controls.append(
                 ft.Container(
-                    content=ft.Image(src=full_url, semantics_label=f"Evidência da tarefa: {title}", width=120, height=90, fit=ft.BoxFit.COVER, border_radius=8),
+                    content=ft.Image(
+                        src=full_url, width=120, height=90, fit=ft.BoxFit.COVER, border_radius=8,
+                        semantics_label=f"Foto enviada para o item: {title}",
+                    ),
                     margin=ft.Margin.only(left=56, bottom=8),
                     border=ft.Border(bottom=ft.BorderSide(color=th.SURFACE_VARIANT, width=1)),
-                    on_click=lambda e, u=full_url: th.show_photo_dialog(page, u, f"Evidência da tarefa: {title}"),
+                    on_click=lambda e, u=full_url, t=title: th.show_photo_dialog(page, u, f"Foto do item: {t}"),
+                    ink=True,  # permite foco e ativação pelo teclado
                     border_radius=8,
-                    tooltip="Toque para ampliar",
+                    tooltip="Ampliar a foto",
                 )
             )
 
@@ -574,7 +578,7 @@ def build_checklist_view(page: ft.Page, state: AppState, checklist_id: str) -> f
         padding=0,
         appbar=ft.AppBar(
             bgcolor=th.PRIMARY,
-            leading=ft.IconButton(ft.Icons.ARROW_BACK, icon_color=ft.Colors.WHITE, on_click=lambda e: asyncio.create_task(page.push_route("/employee"))),
+            leading=ft.IconButton(ft.Icons.ARROW_BACK, icon_color=ft.Colors.WHITE, tooltip="Voltar para a lista de checklists", on_click=lambda e: asyncio.create_task(page.push_route("/employee"))),
             title=ft.Text("Checklist", color=ft.Colors.WHITE, weight=ft.FontWeight.BOLD),
             actions=[
                 ft.IconButton(
