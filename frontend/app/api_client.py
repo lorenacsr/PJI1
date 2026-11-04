@@ -62,7 +62,8 @@ class APIClient:
             return {}
 
     async def login(self, email: str, password: str) -> dict:
-        async with ReadRetryClient(timeout=15) as client:
+        # O primeiro acesso pode aguardar a inicialização da API no Render.
+        async with ReadRetryClient(timeout=60) as client:
             r = await client.post(self._url("/auth/login"), json={"email": email, "password": password})
             return await self._handle(r)
 
